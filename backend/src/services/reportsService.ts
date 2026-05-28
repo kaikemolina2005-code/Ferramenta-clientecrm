@@ -1,0 +1,362 @@
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+export class ReportsService {
+  /**
+   * Overview com KPIs principais
+   */
+  async getOverview(startDate?: Date, endDate?: Date) {
+    const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 dias atrás
+    const end = endDate || new Date();
+
+    try {
+      // Total de leads no período
+      const totalLeads = await prisma.lead.count({
+        where: { createdAt: { gte: start, lte: end } }
+      });
+
+      // Leads convertidos
+      const convertedLeads = await prisma.lead.count({
+        where: {
+          status: 'CONVERTED',
+          createdAt: { gte: start, lte: end }
+        }
+      });
+
+      // Taxa de conversão
+      const conversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
+
+      // Score médio
+      const scoreStats = await prisma.lead.aggregate({
+        _avg: { score: true },
+        _max: { score: true },
+        _min: { score: true }
+      });
+
+      // Leads por status
+      const leadsByStatus = await prisma.lead.groupBy({
+        by: ['status'],
+        _count: true,
+        where: { createdAt: { gte: start, lte: end } }
+      });
+
+      // Leads por categoria
+      const leadsByCategory = await prisma.lead.groupBy({
+        by: ['category'],
+        _count: true,
+        where: { createdAt: { gte: start, lte: end } }
+      });
+
+      return {
+        period: { start, end },
+        summary: {
+          totalLeads,
+          convertedLeads,
+          conversionRate: Math.round(conversionRate * 10) / 10,
+          averageScore: Math.round((scoreStats._avg.score || 0) * 10) / 10,
+          maxScore: scoreStats._max.score || 0,
+          minScore: scoreStats._min.score || 0
+        },
+        statusDistribution: leadsByStatus,
+        categoryDistribution: leadsByCategory
+      };
+    } catch (error) {
+      console.error('❌ Erro ao gerar overview:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Análise detalhada de leads
+   */
+  async getLeadAnalytics(startDate?: Date, endDate?: Date) {
+    const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate || new Date();
+
+    try {
+      // Leads por fonte
+      const leadsBySource = await prisma.lead.groupBy({
+        by: ['source'],
+        _count: true,
+        where: { createdAt: { gte: start, lte: end } }
+      });
+
+      // Leads por responsável
+      const leadsByUser = await prisma.lead.groupBy({
+        by: ['responsibleId'],
+        _count: true,
+        where: { createdAt: { gte: start, lte: end } }
+      });
+
+      // Leads com scores altos vs baixos
+      const highScoreLeads = await prisma.lead.count({
+        where: { score: { gte: 70 }, createdAt: { gte: start, lte: end } }
+      });
+
+      const lowScoreLeads = await prisma.lead.count({
+        where: { score: { lt: 40 }, createdAt: { gte: start, lte: end } }
+      });
+
+      // Tempo médio no pipeline
+      const allLeads = await prisma.lead.findMany({
+        where: { createdAt: { gte: start, lte: end } },
+        select: { createdAt: true, updatedAt: true },
+        take: 1000
+      });
+
+      const avgDaysInPipeline = allLeads.length > 0
+        ? allLeads.reduce((sum, lead) => {
+            const days = (lead.updatedAt.getTime() - lead.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+            return sum + days;
+          }, 0) / allLeads.length
+        : 0;
+
+      return {
+        period: { start, end },
+        leadsBySource,
+        leadsByUser,
+        scoreDistribution: {
+          high: highScoreLeads,
+          low: lowScoreLeads
+        },
+        avgDaysInPipeline: Math.round(avgDaysInPipeline)
+      };
+    } catch (error) {
+      console.error('❌ Erro ao gerar lead analytics:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Métricas de conversão
+   */
+  async getConversionMetrics(startDate?: Date, endDate?: Date) {
+    const start = startDate || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000); // 90 dias
+    const end = endDate || new Date();
+
+    try {
+      // Conversões por categoria
+      const conversionByCategory = await prisma.lead.groupBy({
+        by: ['category'],
+        _count: { id: true },
+        where: {
+          status: 'CONVERTED',
+          createdAt: { gte: start, lte: end }
+        }
+      });
+
+      // Taxa de conversão por responsável
+      const allLeadsByUser = await prisma.lead.groupBy({
+        by: ['responsibleId'],
+        _count: { id: true },
+        where: { createdAt: { gte: start, lte: end } }
+      });
+
+      const convertedByUser = await prisma.lead.groupBy({
+        by: ['responsibleId'],
+        _count: { id: true },
+        where: {
+          status: 'CONVERTED',
+          createdAt: { gte: start, lte: end }
+        }
+      });
+
+      // Top performers
+      const topPerformers = convertedByUser
+        .map(item => {
+          const total = allLeadsByUser.find(u => u.responsibleId === item.responsibleId)?._count.id || 1;
+          return {
+            userId: item.responsibleId,
+            converted: item._count.id,
+            total,
+            rate: Math.round((item._count.id / total) * 100)
+          };
+        })
+        .sort((a, b) => b.rate - a.rate)
+        .slice(0, 5);
+
+      return {
+        period: { start, end },
+        conversionByCategory,
+        topPerformers
+      };
+    } catch (error) {
+      console.error('❌ Erro ao gerar conversion metrics:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Relatórios de automação
+   */
+  async getAutomationReports(startDate?: Date, endDate?: Date) {
+    const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate || new Date();
+
+    try {
+      // Total de automações executadas
+      const totalAutomations = await prisma.automationLog.count({
+        where: { createdAt: { gte: start, lte: end } }
+      });
+
+      // Automações por status
+      const automationsByStatus: any[] = await (prisma.automationLog.groupBy as any)({
+        by: ['status'],
+        _count: true,
+        where: { createdAt: { gte: start, lte: end } }
+      });
+
+      // Automações por action
+      const automationsByAction: any[] = await (prisma.automationLog.groupBy as any)({
+        by: ['action'],
+        _count: true,
+        where: { createdAt: { gte: start, lte: end } }
+      });
+
+      // Taxa de sucesso
+      const successful = automationsByStatus.find((s: any) => s.status === 'EXECUTED')?._count || 0;
+      const failed = automationsByStatus.find((s: any) => s.status === 'FAILED')?._count || 0;
+      const successRate = totalAutomations > 0 ? (successful / totalAutomations) * 100 : 0;
+
+      // Top regras mais usadas
+      const topRules = await (prisma.automationLog.groupBy as any)({
+        by: ['ruleId'],
+        _count: { ruleId: true },
+        where: { createdAt: { gte: start, lte: end } },
+        orderBy: { _count: { ruleId: 'desc' } },
+        take: 5
+      });
+
+      return {
+        period: { start, end },
+        summary: {
+          totalAutomations,
+          successful,
+          failed,
+          successRate: Math.round(successRate * 10) / 10
+        },
+        byStatus: automationsByStatus,
+        byAction: automationsByAction,
+        topRules
+      };
+    } catch (error) {
+      console.error('❌ Erro ao gerar automation reports:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Dados para gráficos de série temporal
+   */
+  async getTimeSeriesData(days: number = 30) {
+    try {
+      const data = [];
+      const today = new Date();
+
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const nextDate = new Date(date);
+        nextDate.setDate(nextDate.getDate() + 1);
+
+        const leadsCreated = await prisma.lead.count({
+          where: {
+            createdAt: { gte: date, lt: nextDate }
+          }
+        });
+
+        const converted = await prisma.lead.count({
+          where: {
+            status: 'CONVERTED',
+            createdAt: { gte: date, lt: nextDate }
+          }
+        });
+
+        const automations = await prisma.automationLog.count({
+          where: {
+            createdAt: { gte: date, lt: nextDate }
+          }
+        });
+
+        const avgScore = await prisma.lead.aggregate({
+          _avg: { score: true },
+          where: {
+            createdAt: { gte: date, lt: nextDate }
+          }
+        });
+
+        data.push({
+          date: date.toISOString().split('T')[0],
+          leadsCreated,
+          converted,
+          conversionRate: leadsCreated > 0 ? Math.round((converted / leadsCreated) * 100) : 0,
+          automationExecutions: automations,
+          avgScore: Math.round((avgScore._avg.score || 0) * 10) / 10
+        });
+      }
+
+      return data;
+    } catch (error) {
+      console.error('❌ Erro ao gerar time series data:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Comparação período vs período anterior
+   */
+  async getPeriodComparison(days: number = 30) {
+    try {
+      const today = new Date();
+      const currentStart = new Date(today);
+      currentStart.setDate(currentStart.getDate() - days);
+
+      const previousStart = new Date(currentStart);
+      previousStart.setDate(previousStart.getDate() - days);
+
+      // Current period
+      const currentLeads = await prisma.lead.count({
+        where: { createdAt: { gte: currentStart, lte: today } }
+      });
+
+      const currentConverted = await prisma.lead.count({
+        where: {
+          status: 'CONVERTED',
+          createdAt: { gte: currentStart, lte: today }
+        }
+      });
+
+      // Previous period
+      const previousLeads = await prisma.lead.count({
+        where: { createdAt: { gte: previousStart, lt: currentStart } }
+      });
+
+      const previousConverted = await prisma.lead.count({
+        where: {
+          status: 'CONVERTED',
+          createdAt: { gte: previousStart, lt: currentStart }
+        }
+      });
+
+      const leadsGrowth = previousLeads > 0 ? Math.round(((currentLeads - previousLeads) / previousLeads) * 100) : 0;
+      const conversionGrowth = previousConverted > 0
+        ? Math.round((((currentConverted / currentLeads) - (previousConverted / previousLeads)) / (previousConverted / previousLeads)) * 100)
+        : 0;
+
+      return {
+        currentPeriod: { start: currentStart, end: today, leads: currentLeads, converted: currentConverted },
+        previousPeriod: { start: previousStart, end: currentStart, leads: previousLeads, converted: previousConverted },
+        growth: {
+          leadsPercentage: leadsGrowth,
+          conversionPercentage: conversionGrowth
+        }
+      };
+    } catch (error) {
+      console.error('❌ Erro ao comparar períodos:', error);
+      throw error;
+    }
+  }
+}
+
+export const reportsService = new ReportsService();

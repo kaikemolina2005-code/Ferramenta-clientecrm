@@ -1,0 +1,417 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  name      String
+  role      UserRole   @default(ADMIN)
+  avatar    String?
+  phone     String?
+  
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  
+  leads      Lead[]
+  activities Activity[]
+  kanbanCards KanbanCard[]
+  documents  Document[]
+  workload   UserWorkload?   // PASSO 10: Workload tracking
+}
+
+enum UserRole {
+  ADMIN
+  LAWYER
+  STAFF
+}
+
+model Conversion {
+  id        String    @id @default(cuid())
+  leadId    String
+  lead      Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  
+  date      DateTime  @default(now())
+  amount    Float
+  notes     String?
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model KanbanCard {
+  id           String      @id @default(cuid())
+  leadId       String
+  lead         Lead        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  
+  sector       KanbanSector
+  stage        String      // e.g., "initial", "consulting", "payment"
+  position     Int         @default(0)
+  
+  responsibleId String?
+  responsible   User?       @relation(fields: [responsibleId], references: [id])
+  
+  notes        String?
+  
+  movedBy      String? // userId que moveu o card
+  movedAt      DateTime?
+  
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+enum KanbanSector {
+  COMMERCIAL
+  LEGAL
+  ADMINISTRATIVE
+}
+
+model Document {
+  id           String    @id @default(cuid())
+  leadId       String?
+  lead         Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  
+  uploaderId   String
+  uploader     User      @relation(fields: [uploaderId], references: [id])
+  
+  name         String
+  type         String    // RG, CPF, PHOTO, PDF, etc.
+  fileUrl      String    // OneDrive URL
+  oneDriveId   String?
+  
+  processedBy  String?   // AI-processed document ID
+  isProcessed  Boolean   @default(false)
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Activity {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  
+  leadId    String?
+  lead      Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  
+  action    String    // "created_lead", "moved_card", "uploaded_document", etc.
+  details   String?   // JSON string with additional details
+  
+  createdAt DateTime  @default(now())
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  title     String
+  message   String
+  type      String    // "new_lead", "document_sent", "stage_changed"
+  isRead    Boolean   @default(false)
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// Email Sequences (Passo 8)
+model EmailSequence {
+  id            String    @id @default(cuid())
+  name          String    @unique
+  description   String?
+  
+  // Trigga automática
+  trigger       SequenceTrigger  // LEAD_CREATED, LEAD_CONVERTED, etc
+  triggerValue  String?   // Ex: categoria específica
+  
+  isActive      Boolean   @default(true)
+  priority      Int       @default(0)  // 0 = normal, 1 = high, -1 = low
+  
+  // Configurações
+  maxRetries    Int       @default(3)
+  retryDelayMin Int       @default(60)  // minutos
+  
+  steps         EmailSequenceStep[]
+  progress      LeadSequenceProgress[]
+  emailLogs     EmailLog[]
+  automationRules AutomationRule[]   // PASSO 10: Linked automation rules
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model EmailSequenceStep {
+  id              String    @id @default(cuid())
+  sequenceId      String
+  sequence        EmailSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  
+  stepNumber      Int
+  delayMinutes    Int       @default(0)    // Quanto tempo depois do anterior
+  
+  template        String    // "welcome", "conversion", "follow_up", "survey"
+  subject         String
+  previewText     String?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@unique([sequenceId, stepNumber])
+}
+
+model LeadSequenceProgress {
+  id              String    @id @default(cuid())
+  leadId          String
+  lead            Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  
+  sequenceId      String
+  sequence        EmailSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  
+  currentStep     Int       @default(0)
+  status          SequenceStatus @default(ACTIVE)  // ACTIVE, COMPLETED, PAUSED, ERROR
+  
+  lastStepAt      DateTime?
+  nextStepAt      DateTime?
+  completedAt     DateTime?
+  
+  errorCount      Int       @default(0)
+  lastError       String?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@unique([leadId, sequenceId])
+}
+
+model EmailLog {
+  id              String    @id @default(cuid())
+  sequenceId      String
+  sequence        EmailSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  
+  leadId          String
+  lead            Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  
+  stepNumber      Int
+  toEmail         String
+  subject         String
+  
+  status          EmailStatus @default(PENDING)  // PENDING, SENT, FAILED, BOUNCED
+  sentAt          DateTime?
+  failedAt        DateTime?
+  failureReason   String?
+  
+  retryCount      Int       @default(0)
+  nextRetryAt     DateTime?
+  
+  // Tracking
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+enum SequenceTrigger {
+  LEAD_CREATED          // Quando novo lead é criado
+  LEAD_CREATED_WEBHOOK  // Especificamente via webhook
+  LEAD_CONVERTED        // Quando lead é convertido
+  CATEGORY_RETIREMENT   // Por categoria
+  CATEGORY_BPC_LOAS
+  CATEGORY_PROCESS
+  CATEGORY_CONSULTATION
+  DAYS_WITHOUT_ACTION   // X dias sem atividade
+  FORM_SUBMISSION       // Envio de formulário específico
+  MANUAL_TRIGGER        // Gatilho manual (admin)
+}
+
+enum SequenceStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  ERROR
+  CANCELLED
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  BOUNCED
+  UNSUBSCRIBED
+}
+
+enum LeadCategory {
+  PROCESS
+  BPC_LOAS
+  RETIREMENT
+  CONSULTATION
+}
+
+enum LeadStatus {
+  INITIAL
+  CONSULTING
+  PAYMENT
+  LOSS
+  CONVERTED
+}
+
+// Relação do Lead com sequences
+model Lead {
+  id              String     @id @default(cuid())
+  whatsappId      String?    @unique
+  name            String
+  cpf             String     @unique
+  birthDate       DateTime?
+  phone           String
+  email           String?
+  address         String?
+  city            String?
+  state           String?
+  zipCode         String?
+  
+  category        LeadCategory
+  status          LeadStatus  @default(INITIAL)
+  source          String?
+  
+  responsibleId   String?
+  responsible     User?       @relation(fields: [responsibleId], references: [id])
+  
+  // PASSO 10: Lead Scoring & Automation
+  score           Int         @default(0)          // 0-100
+  scoreUpdatedAt  DateTime    @default(now())      // Última atualização
+  scoringFactors  String?     // JSON com fatores de score
+  
+  // Auto-assignment tracking
+  autoAssignedAt  DateTime?   // Quando foi auto-atribuído
+  lastActivityAt  DateTime?   // Última atividade
+  daysWithoutActivity Int     @default(0)         // Dias sem atividade
+  
+  conversions     Conversion[]
+  documents       Document[]
+  activities      Activity[]
+  kanbanCards     KanbanCard[]
+  
+  // Email Sequences
+  sequenceProgress LeadSequenceProgress[]
+  emailLogs       EmailLog[]
+  
+  // Automation
+  automationLogs  AutomationLog[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PASSO 10: ADVANCED AUTOMATION (Lead Scoring & Auto-Assignment)
+// ═══════════════════════════════════════════════════════════════
+
+model AutomationRule {
+  id              String    @id @default(cuid())
+  name            String    @unique
+  description     String?
+  
+  // Trigger conditions
+  trigger         AutomationTrigger    // Gatilho que dispara
+  triggerValue    String?              // Valor (ex: categoria)
+  
+  // Scoring weights (para lead scoring)
+  scoreWeight     Int       @default(0)    // Quanto adiciona ao score
+  
+  // Assignment rules
+  assignmentRule  String?   // JSON com lógica de atribuição
+  autoAssign      Boolean   @default(false) // Atribuir automaticamente?
+  
+  // Action to trigger
+  action          AutomationAction     // Ação quando regra dispara
+  actionValue     String?              // Valor da ação (ex: send_email)
+  
+  // Sequence to trigger
+  sequenceId      String?
+  sequence        EmailSequence?  @relation(fields: [sequenceId], references: [id], onDelete: SetNull)
+  
+  isActive        Boolean   @default(true)
+  priority        Int       @default(0)
+  
+  executionCount  Int       @default(0)
+  lastExecutedAt  DateTime?
+  
+  logs            AutomationLog[]
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model AutomationLog {
+  id              String    @id @default(cuid())
+  ruleId          String?
+  rule            AutomationRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  
+  leadId          String
+  lead            Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  
+  action          AutomationAction
+  status          AutomationStatus  @default(PENDING)
+  
+  scoreBefore     Int?
+  scoreAfter      Int?
+  
+  details         String?   // JSON com detalhes da execução
+  error           String?   // Erro se falhou
+  
+  executedBy      String?   // User ID que executou (se manual)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model UserWorkload {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  activeLeads     Int       @default(0)    // Número de leads ativos
+  maxCapacity     Int       @default(20)   // Máximo de leads
+  
+  // Specialties
+  specialties     String    // JSON array: ["RETIREMENT", "BPC_LOAS", ...]
+  
+  utilization     Float     @default(0)    // Percentual de utilização (0-100)
+  isAvailable     Boolean   @default(true) // Disponível para auto-assign?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+enum AutomationTrigger {
+  LEAD_CREATED
+  LEAD_SCORE_ABOVE     // Score > X
+  LEAD_SCORE_BELOW     // Score < X
+  LEAD_CONVERTED
+  DAYS_WITHOUT_ACTION  // X dias sem atividade
+  CATEGORY_MATCH
+  STATUS_CHANGE
+  MANUAL
+}
+
+enum AutomationAction {
+  ASSIGN_TO_USER       // Auto-atribuir a um usuário
+  SEND_EMAIL           // Enviar email
+  TRIGGER_SEQUENCE     // Disparar sequência
+  UPDATE_STATUS        // Atualizar status
+  ADD_TO_KANBAN        // Adicionar ao Kanban
+  NOTIFY_TEAM          // Notificar time
+  MARK_FOR_REVIEW      // Marcar para revisão
+}
+
+enum AutomationStatus {
+  PENDING
+  EXECUTED
+  FAILED
+  CANCELLED
+}
