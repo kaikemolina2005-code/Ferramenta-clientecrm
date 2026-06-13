@@ -35,6 +35,7 @@ export const WhatsAppPage: React.FC = () => {
   const [logs, setLogs] = useState<Activity[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [testMessage, setTestMessage] = useState('');
   const [testPhone, setTestPhone] = useState('');
   const [sending, setSending] = useState(false);
@@ -49,18 +50,21 @@ export const WhatsAppPage: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
 
       const [statusRes, logsRes, statsRes] = await Promise.all([
-        axios.get('/api/whatsapp/status'),
-        axios.get('/api/whatsapp/logs?limit=10'),
-        axios.get('/api/whatsapp/stats'),
+        axios.get('/api/whatsapp/status').catch(e => ({ data: { configured: false, phoneNumberId: 'Erro ao conectar' } })),
+        axios.get('/api/whatsapp/logs?limit=10').catch(e => ({ data: [] })),
+        axios.get('/api/whatsapp/stats').catch(e => ({ data: null })),
       ]);
 
       setConnectionStatus(statusRes.data);
-      setLogs(logsRes.data);
+      setLogs(logsRes.data || []);
       setStats(statsRes.data);
-    } catch (error) {
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.error || error?.message || 'Erro ao carregar dados do WhatsApp';
       console.error('Erro ao carregar dados:', error);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -124,6 +128,21 @@ export const WhatsAppPage: React.FC = () => {
       backgroundColor: designSystem.colors.neutral.light,
       minHeight: '100vh'
     }}>
+      {/* Erro Banner */}
+      {error && (
+        <div style={{
+          padding: '12px 16px',
+          marginBottom: '24px',
+          borderRadius: '8px',
+          backgroundColor: '#f8d7da',
+          border: '1px solid #f5c6cb',
+          color: '#721c24',
+          fontSize: '14px'
+        }}>
+          ⚠️ {error}
+        </div>
+      )}
+
       {/* Header */}
       <div style={{
         display: 'flex',
