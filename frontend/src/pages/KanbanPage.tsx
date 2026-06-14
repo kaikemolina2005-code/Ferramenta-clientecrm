@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/TopBar';
+import { Modal } from '@/components/Modals';
 import { designSystem } from '@/theme/designSystem';
-import { kanbanService } from '@/services/leadService';
-import { KanbanCard as KanbanCardType } from '@/types';
+import { kanbanService, leadService } from '@/services/leadService';
+import { KanbanCard as KanbanCardType, Lead } from '@/types';
 
 export function KanbanPage() {
   const [sectors] = useState<string[]>(['COMMERCIAL', 'LEGAL', 'ADMINISTRATIVE']);
@@ -13,6 +14,10 @@ export function KanbanPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [draggedCard, setDraggedCard] = useState<KanbanCardType | null>(null);
+  const [addModalSector, setAddModalSector] = useState<string | null>(null);
+  const [availableLeads, setAvailableLeads] = useState<Lead[]>([]);
+  const [leadsLoading, setLeadsLoading] = useState(false);
+  const [leadSearch, setLeadSearch] = useState('');
 
   useEffect(() => {
     loadKanbanCards();
@@ -68,6 +73,38 @@ export function KanbanPage() {
       setDraggedCard(null);
     } catch (error) {
       console.error('Erro ao mover card:', error);
+    }
+  };
+
+  const openAddModal = async (sector: string) => {
+    setAddModalSector(sector);
+    setLeadSearch('');
+
+    try {
+      setLeadsLoading(true);
+      const { leads } = await leadService.getAll(1, 100);
+
+      // Não mostrar leads que já estão em algum card do Kanban
+      const cardLeadIds = new Set(
+        Object.values(cards).flat().map((card) => card.leadId)
+      );
+      setAvailableLeads(leads.filter((lead) => !cardLeadIds.has(lead.id)));
+    } catch (error) {
+      console.error('Erro ao carregar leads:', error);
+    } finally {
+      setLeadsLoading(false);
+    }
+  };
+
+  const handleAddCard = async (leadId: string) => {
+    if (!addModalSector) return;
+
+    try {
+      await kanbanService.createCardFromLead(leadId, addModalSector);
+      setAddModalSector(null);
+      await loadKanbanCards();
+    } catch (error) {
+      console.error('Erro ao adicionar card:', error);
     }
   };
 
@@ -164,16 +201,48 @@ export function KanbanPage() {
               }}>
                 {sectorNames[sector].icon} {sectorNames[sector].name}
               </h2>
-              <span style={{
-                backgroundColor: sectorNames[sector].color,
-                color: designSystem.colors.neutral.white,
-                padding: '4px 12px',
-                borderRadius: '16px',
-                fontSize: '12px',
-                fontWeight: '600'
-              }}>
-                {cards[sector as keyof typeof cards]?.length || 0}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{
+                  backgroundColor: sectorNames[sector].color,
+                  color: designSystem.colors.neutral.white,
+                  padding: '4px 12px',
+                  borderRadius: '16px',
+                  fontSize: '12px',
+                  fontWeight: '600'
+                }}>
+                  {cards[sector as keyof typeof cards]?.length || 0}
+                </span>
+                <button
+                  onClick={() => openAddModal(sector)}
+                  title="Adicionar lead a este Kanban"
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    border: `1px solid ${sectorNames[sector].color}`,
+                    backgroundColor: 'transparent',
+                    color: sectorNames[sector].color,
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    lineHeight: 1,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: designSystem.transitions.normal
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = sectorNames[sector].color;
+                    e.currentTarget.style.color = designSystem.colors.neutral.white;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = sectorNames[sector].color;
+                  }}
+                >
+                  +
+                </button>
+              </div>
             </div>
 
             {/* Cards */}
@@ -291,6 +360,94 @@ export function KanbanPage() {
           💡 <strong>Dica:</strong> Arraste os cards entre as colunas para mover os processos entre os setores.
         </p>
       </div>
+
+      {/* Add Lead Modal */}
+      <Modal
+        isOpen={!!addModalSector}
+        onClose={() => setAddModalSector(null)}
+        title={addModalSector ? `➕ Adicionar lead - ${sectorNames[addModalSector].name}` : ''}
+        size="medium"
+      >
+        <input
+          type="text"
+          placeholder="Buscar lead por nome..."
+          value={leadSearch}
+          onChange={(e) => setLeadSearch(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            borderRadius: '8px',
+            border: `1px solid ${designSystem.colors.neutral.gray300}`,
+            fontSize: '14px',
+            marginBottom: '16px',
+            boxSizing: 'border-box'
+          }}
+        />
+
+        {leadsLoading ? (
+          <p style={{ textAlign: 'center', color: designSystem.colors.neutral.gray500 }}>
+            Carregando leads...
+          </p>
+        ) : (
+          (() => {
+            const filteredLeads = availableLeads.filter((lead) =>
+              lead.name.toLowerCase().includes(leadSearch.toLowerCase())
+            );
+
+            if (filteredLeads.length === 0) {
+              return (
+                <p style={{ textAlign: 'center', color: designSystem.colors.neutral.gray500, padding: '24px 0' }}>
+                  {availableLeads.length === 0
+                    ? 'Nenhum lead disponível. Cadastre um novo lead na página de Leads para poder adicioná-lo a um Kanban.'
+                    : 'Nenhum lead encontrado para essa busca.'}
+                </p>
+              );
+            }
+
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '400px', overflowY: 'auto' }}>
+                {filteredLeads.map((lead) => (
+                  <button
+                    key={lead.id}
+                    onClick={() => handleAddCard(lead.id)}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: `1px solid ${designSystem.colors.neutral.gray300}`,
+                      backgroundColor: designSystem.colors.neutral.white,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: designSystem.transitions.normal
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = designSystem.colors.neutral.light;
+                      e.currentTarget.style.borderColor = addModalSector ? sectorNames[addModalSector].color : designSystem.colors.neutral.gray400;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = designSystem.colors.neutral.white;
+                      e.currentTarget.style.borderColor = designSystem.colors.neutral.gray300;
+                    }}
+                  >
+                    <div>
+                      <p style={{ fontWeight: '600', color: designSystem.colors.primary.dark, margin: 0 }}>
+                        {lead.name}
+                      </p>
+                      <p style={{ fontSize: '12px', color: designSystem.colors.neutral.gray600, margin: '4px 0 0' }}>
+                        {lead.category} • {lead.phone}
+                      </p>
+                    </div>
+                    <span style={{ fontSize: '20px', color: designSystem.colors.neutral.gray400 }}>+</span>
+                  </button>
+                ))}
+              </div>
+            );
+          })()
+        )}
+      </Modal>
     </div>
   );
 }
