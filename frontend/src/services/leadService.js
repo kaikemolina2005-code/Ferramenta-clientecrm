@@ -47,8 +47,34 @@ export const kanbanService = {
     async deleteCard(cardId) {
         await api.delete(`/kanban/${cardId}`);
     },
-    async createCardFromLead(leadId, sector = 'COMMERCIAL') {
-        const response = await api.post(`/kanban/lead/${leadId}`, { sector });
+    async createCardFromLead(leadId, sector = 'COMMERCIAL', stage) {
+        const response = await api.post(`/kanban/lead/${leadId}`, { sector, stage });
         return response.data.data;
+    },
+};
+
+export const taskService = {
+    async getByLead(leadId) {
+        const response = await api.get(`/tasks/lead/${leadId}`);
+        return response.data.data || [];
+    },
+    async create(leadId, data) {
+        const formData = new FormData();
+        formData.append('title', data.title);
+        if (data.description) formData.append('description', data.description);
+        if (data.dueDate) formData.append('dueDate', data.dueDate);
+        if (data.file) formData.append('file', data.file);
+
+        const response = await api.post(`/tasks/lead/${leadId}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return response.data.data;
+    },
+    async update(taskId, data) {
+        const response = await api.put(`/tasks/${taskId}`, data);
+        return response.data.data;
+    },
+    async delete(taskId) {
+        await api.delete(`/tasks/${taskId}`);
     },
 };

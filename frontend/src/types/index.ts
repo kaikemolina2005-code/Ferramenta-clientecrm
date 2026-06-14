@@ -31,6 +31,23 @@ export interface Lead {
   source?: string;
   responsibleId?: string;
   responsible?: User;
+  tasks?: LeadTask[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LeadTask {
+  id: string;
+  leadId: string;
+  title: string;
+  description?: string;
+  dueDate?: string;
+  completed: boolean;
+  completedAt?: string;
+  createdById: string;
+  createdBy?: User;
+  attachmentUrl?: string;
+  attachmentName?: string;
   createdAt: string;
   updatedAt: string;
 }

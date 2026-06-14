@@ -1,5 +1,5 @@
 import api from './api';
-import { Lead } from '@/types';
+import { Lead, LeadTask } from '@/types';
 
 export const leadService = {
   async getAll(page = 1, limit = 20, filters?: any): Promise<{ leads: Lead[]; total: number }> {
@@ -60,8 +60,37 @@ export const kanbanService = {
     await api.delete(`/kanban/${cardId}`);
   },
 
-  async createCardFromLead(leadId: string, sector: string = 'COMMERCIAL'): Promise<any> {
-    const response = await api.post(`/kanban/lead/${leadId}`, { sector });
+  async createCardFromLead(leadId: string, sector: string = 'COMMERCIAL', stage?: string): Promise<any> {
+    const response = await api.post(`/kanban/lead/${leadId}`, { sector, stage });
     return response.data.data;
+  },
+};
+
+export const taskService = {
+  async getByLead(leadId: string): Promise<LeadTask[]> {
+    const response = await api.get(`/tasks/lead/${leadId}`);
+    return response.data.data || [];
+  },
+
+  async create(leadId: string, data: { title: string; description?: string; dueDate?: string; file?: File }): Promise<LeadTask> {
+    const formData = new FormData();
+    formData.append('title', data.title);
+    if (data.description) formData.append('description', data.description);
+    if (data.dueDate) formData.append('dueDate', data.dueDate);
+    if (data.file) formData.append('file', data.file);
+
+    const response = await api.post(`/tasks/lead/${leadId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
+  },
+
+  async update(taskId: string, data: Partial<{ title: string; description: string; dueDate: string | null; completed: boolean }>): Promise<LeadTask> {
+    const response = await api.put(`/tasks/${taskId}`, data);
+    return response.data.data;
+  },
+
+  async delete(taskId: string): Promise<void> {
+    await api.delete(`/tasks/${taskId}`);
   },
 };

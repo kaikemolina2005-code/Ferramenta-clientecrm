@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { whatsappService } from '../services/whatsappService.js';
+import { kanbanService } from '../services/kanbanService.js';
+import { socketService } from '../socket/service.js';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -60,6 +62,25 @@ export const receiveMessage = async (req: Request, res: Response): Promise<void>
               status: 'INITIAL',
               source: 'WHATSAPP',
             },
+          });
+
+          // Criar card no Kanban Comercial (etapa "Início") para triagem
+          const kanbanCard = await kanbanService.createCard({
+            leadId: lead.id,
+            sector: 'COMMERCIAL',
+            stage: 'inicio',
+            position: 0,
+            notes: `Lead recebido via WhatsApp (${msg.from})`,
+          });
+
+          socketService.emitKanbanCardCreated({
+            cardId: kanbanCard.id,
+            leadId: lead.id,
+            sector: 'COMMERCIAL',
+            title: lead.name,
+            timestamp: new Date(),
+            userId: 'system',
+            userName: 'WhatsApp Bot',
           });
 
           // Enviar mensagem de boas-vindas

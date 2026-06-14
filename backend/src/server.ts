@@ -12,6 +12,7 @@ import webhooksRoutes from './routes/webhooks.js';
 import sequencesRoutes from './routes/sequences.js';
 import automationRoutes from './routes/automation.js';
 import reportsRoutes from './routes/reports.js';
+import tasksRoutes from './routes/tasks.js';
 import { socketService } from './socket/service.js';
 import { sequenceScheduler } from './scheduler/sequenceScheduler.js';
 import { automationScheduler } from './scheduler/automationScheduler.js';
@@ -105,6 +106,7 @@ app.use('/api/webhooks', webhooksRoutes);
 app.use('/api/sequences', sequencesRoutes);
 app.use('/api/automation', automationRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/tasks', tasksRoutes);
 
 // Error handling
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

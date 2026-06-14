@@ -27,6 +27,7 @@ model User {
   kanbanCards KanbanCard[]
   documents  Document[]
   workload   UserWorkload?   // PASSO 10: Workload tracking
+  tasks      LeadTask[]
 }
 
 enum UserRole {
@@ -107,6 +108,27 @@ model Activity {
   details   String?   // JSON string with additional details
   
   createdAt DateTime  @default(now())
+}
+
+model LeadTask {
+  id          String    @id @default(cuid())
+  leadId      String
+  lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  dueDate     DateTime?
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+
+  createdById String
+  createdBy   User      @relation(fields: [createdById], references: [id])
+
+  attachmentUrl  String?
+  attachmentName String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Notification {
@@ -295,6 +317,7 @@ model Lead {
   documents       Document[]
   activities      Activity[]
   kanbanCards     KanbanCard[]
+  tasks           LeadTask[]
   
   // Email Sequences
   sequenceProgress LeadSequenceProgress[]

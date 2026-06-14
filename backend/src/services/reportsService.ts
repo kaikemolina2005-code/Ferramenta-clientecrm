@@ -48,6 +48,13 @@ export class ReportsService {
         where: { createdAt: { gte: start, lte: end } }
       });
 
+      // Processos ativos (ainda em andamento, não convertidos nem perdidos)
+      const activeProcesses = await prisma.lead.count({
+        where: {
+          status: { in: ['INITIAL', 'CONSULTING', 'PAYMENT'] }
+        }
+      });
+
       return {
         period: { start, end },
         summary: {
@@ -56,7 +63,8 @@ export class ReportsService {
           conversionRate: Math.round(conversionRate * 10) / 10,
           averageScore: Math.round((scoreStats._avg.score || 0) * 10) / 10,
           maxScore: scoreStats._max.score || 0,
-          minScore: scoreStats._min.score || 0
+          minScore: scoreStats._min.score || 0,
+          activeProcesses
         },
         statusDistribution: leadsByStatus,
         categoryDistribution: leadsByCategory
@@ -163,7 +171,7 @@ export class ReportsService {
       });
 
       // Top performers
-      const topPerformers = convertedByUser
+      const topPerformersRaw = convertedByUser
         .map(item => {
           const total = allLeadsByUser.find(u => u.responsibleId === item.responsibleId)?._count.id || 1;
           return {
@@ -175,6 +183,20 @@ export class ReportsService {
         })
         .sort((a, b) => b.rate - a.rate)
         .slice(0, 5);
+
+      // Resolver nomes dos responsáveis
+      const userIds = topPerformersRaw.map(p => p.userId).filter((id): id is string => !!id);
+      const users = userIds.length > 0
+        ? await prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, name: true }
+          })
+        : [];
+
+      const topPerformers = topPerformersRaw.map(p => ({
+        ...p,
+        userName: users.find(u => u.id === p.userId)?.name || 'Sem responsável'
+      }));
 
       return {
         period: { start, end },

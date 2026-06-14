@@ -19,6 +19,10 @@ export class KanbanService {
         lead: {
           include: {
             responsible: true,
+            tasks: {
+              where: { completed: false },
+              select: { id: true },
+            },
           },
         },
         responsible: true,
@@ -37,6 +41,10 @@ export class KanbanService {
         lead: {
           include: {
             responsible: true,
+            tasks: {
+              where: { completed: false },
+              select: { id: true },
+            },
           },
         },
         responsible: true,
@@ -54,6 +62,10 @@ export class KanbanService {
         lead: {
           include: {
             responsible: true,
+            tasks: {
+              where: { completed: false },
+              select: { id: true },
+            },
           },
         },
         responsible: true,
@@ -79,6 +91,10 @@ export class KanbanService {
         lead: {
           include: {
             responsible: true,
+            tasks: {
+              where: { completed: false },
+              select: { id: true },
+            },
           },
         },
         responsible: true,
@@ -97,6 +113,10 @@ export class KanbanService {
         lead: {
           include: {
             responsible: true,
+            tasks: {
+              where: { completed: false },
+              select: { id: true },
+            },
           },
         },
         responsible: true,
@@ -121,6 +141,10 @@ export class KanbanService {
         lead: {
           include: {
             responsible: true,
+            tasks: {
+              where: { completed: false },
+              select: { id: true },
+            },
           },
         },
         responsible: true,
@@ -139,6 +163,10 @@ export class KanbanService {
         lead: {
           include: {
             responsible: true,
+            tasks: {
+              where: { completed: false },
+              select: { id: true },
+            },
           },
         },
         responsible: true,
@@ -170,6 +198,10 @@ export class KanbanService {
         lead: {
           include: {
             responsible: true,
+            tasks: {
+              where: { completed: false },
+              select: { id: true },
+            },
           },
         },
         responsible: true,

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/Modals';
 import { designSystem } from '@/theme/designSystem';
-import { kanbanService, leadService } from '@/services/leadService';
-import { KanbanCard as KanbanCardType, Lead } from '@/types';
+import { kanbanService, leadService, taskService } from '@/services/leadService';
+import { KanbanCard as KanbanCardType, Lead, LeadTask } from '@/types';
 
 const SECTORS = ['COMMERCIAL', 'LEGAL', 'ADMINISTRATIVE'];
 
@@ -12,14 +12,44 @@ const sectorNames: Record<string, { name: string; color: string; icon: string }>
   ADMINISTRATIVE: { name: 'Administrativo', color: designSystem.colors.primary.light, icon: '📋' },
 };
 
-const STAGES: { key: string; name: string }[] = [
-  { key: 'todo', name: 'A Fazer' },
-  { key: 'in_progress', name: 'Em Andamento' },
-  { key: 'done', name: 'Concluído' },
-];
+// Etapas padrão de cada Kanban, conforme briefing do cliente.
+// As etapas marcadas como "editável" podem ser renomeadas pelo usuário.
+const DEFAULT_STAGES: Record<string, { key: string; name: string; editable?: boolean }[]> = {
+  COMMERCIAL: [
+    { key: 'inicio', name: 'Início' },
+    { key: 'replica', name: 'Réplica' },
+    { key: 'pericia', name: 'Perícia' },
+    { key: 'extra_1', name: 'Etapa Extra 1', editable: true },
+    { key: 'extra_2', name: 'Etapa Extra 2', editable: true },
+  ],
+  LEGAL: [
+    { key: 'inicial', name: 'Inicial' },
+    { key: 'consulta', name: 'Consulta' },
+    { key: 'pagamento', name: 'Pagamento' },
+    { key: 'loss', name: 'Loss' },
+  ],
+  ADMINISTRATIVE: [
+    { key: 'requerimento', name: 'Requerimento' },
+    { key: 'pericia', name: 'Perícia' },
+    { key: 'extra_1', name: 'Etapa Extra 1', editable: true },
+    { key: 'extra_2', name: 'Etapa Extra 2', editable: true },
+  ],
+};
 
-function getStageKey(card: KanbanCardType): string {
-  return STAGES.some((s) => s.key === card.stage) ? card.stage : 'todo';
+const STAGE_NAMES_STORAGE_KEY = 'kanban_stage_names';
+
+function loadStageNameOverrides(): Record<string, Record<string, string>> {
+  try {
+    const raw = localStorage.getItem(STAGE_NAMES_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function getStageKey(card: KanbanCardType, sector: string): string {
+  const stages = DEFAULT_STAGES[sector];
+  return stages.some((s) => s.key === card.stage) ? card.stage : stages[0].key;
 }
 
 export function KanbanPage() {
@@ -35,6 +65,31 @@ export function KanbanPage() {
   const [availableLeads, setAvailableLeads] = useState<Lead[]>([]);
   const [leadsLoading, setLeadsLoading] = useState(false);
   const [leadSearch, setLeadSearch] = useState('');
+  const [stageNameOverrides, setStageNameOverrides] = useState<Record<string, Record<string, string>>>(
+    loadStageNameOverrides()
+  );
+  const [editingStage, setEditingStage] = useState<string | null>(null);
+  const [taskModalCard, setTaskModalCard] = useState<KanbanCardType | null>(null);
+  const [leadTasks, setLeadTasks] = useState<LeadTask[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDescription, setNewTaskDescription] = useState('');
+  const [newTaskDueDate, setNewTaskDueDate] = useState('');
+  const [newTaskFile, setNewTaskFile] = useState<File | null>(null);
+  const [savingTask, setSavingTask] = useState(false);
+
+  const getStageName = (sector: string, stageKey: string, defaultName: string): string => {
+    return stageNameOverrides[sector]?.[stageKey] || defaultName;
+  };
+
+  const renameStage = (sector: string, stageKey: string, newName: string) => {
+    const updated = {
+      ...stageNameOverrides,
+      [sector]: { ...stageNameOverrides[sector], [stageKey]: newName },
+    };
+    setStageNameOverrides(updated);
+    localStorage.setItem(STAGE_NAMES_STORAGE_KEY, JSON.stringify(updated));
+  };
 
   useEffect(() => {
     loadKanbanCards();
@@ -114,11 +169,86 @@ export function KanbanPage() {
 
   const handleAddCard = async (leadId: string) => {
     try {
-      await kanbanService.createCardFromLead(leadId, activeSector);
+      const firstStage = DEFAULT_STAGES[activeSector][0].key;
+      await kanbanService.createCardFromLead(leadId, activeSector, firstStage);
       setShowAddModal(false);
       await loadKanbanCards();
     } catch (error) {
       console.error('Erro ao adicionar card:', error);
+    }
+  };
+
+  const openTasksModal = async (card: KanbanCardType) => {
+    setTaskModalCard(card);
+    setNewTaskTitle('');
+    setNewTaskDescription('');
+    setNewTaskDueDate('');
+    setNewTaskFile(null);
+
+    try {
+      setTasksLoading(true);
+      const tasks = await taskService.getByLead(card.leadId);
+      setLeadTasks(tasks);
+    } catch (error) {
+      console.error('Erro ao carregar tarefas:', error);
+    } finally {
+      setTasksLoading(false);
+    }
+  };
+
+  const closeTasksModal = () => {
+    setTaskModalCard(null);
+    setLeadTasks([]);
+  };
+
+  const handleCreateTask = async () => {
+    if (!taskModalCard || !newTaskTitle.trim()) return;
+
+    try {
+      setSavingTask(true);
+      await taskService.create(taskModalCard.leadId, {
+        title: newTaskTitle.trim(),
+        description: newTaskDescription.trim() || undefined,
+        dueDate: newTaskDueDate || undefined,
+        file: newTaskFile || undefined,
+      });
+      setNewTaskTitle('');
+      setNewTaskDescription('');
+      setNewTaskDueDate('');
+      setNewTaskFile(null);
+      const tasks = await taskService.getByLead(taskModalCard.leadId);
+      setLeadTasks(tasks);
+      await loadKanbanCards();
+    } catch (error) {
+      console.error('Erro ao criar tarefa:', error);
+    } finally {
+      setSavingTask(false);
+    }
+  };
+
+  const handleToggleTask = async (task: LeadTask) => {
+    if (!taskModalCard) return;
+
+    try {
+      await taskService.update(task.id, { completed: !task.completed });
+      const tasks = await taskService.getByLead(taskModalCard.leadId);
+      setLeadTasks(tasks);
+      await loadKanbanCards();
+    } catch (error) {
+      console.error('Erro ao atualizar tarefa:', error);
+    }
+  };
+
+  const handleDeleteTask = async (task: LeadTask) => {
+    if (!taskModalCard) return;
+
+    try {
+      await taskService.delete(task.id);
+      const tasks = await taskService.getByLead(taskModalCard.leadId);
+      setLeadTasks(tasks);
+      await loadKanbanCards();
+    } catch (error) {
+      console.error('Erro ao remover tarefa:', error);
     }
   };
 
@@ -254,8 +384,11 @@ export function KanbanPage() {
           gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
           gap: '24px'
         }}>
-          {STAGES.map((stage) => {
-            const stageCards = sectorCards.filter((card) => getStageKey(card) === stage.key);
+          {DEFAULT_STAGES[activeSector].map((stage) => {
+            const stageCards = sectorCards.filter((card) => getStageKey(card, activeSector) === stage.key);
+            const stageName = getStageName(activeSector, stage.key, stage.name);
+            const editId = `${activeSector}:${stage.key}`;
+            const isEditing = editingStage === editId;
 
             return (
               <div
@@ -276,22 +409,56 @@ export function KanbanPage() {
                   justifyContent: 'space-between',
                   marginBottom: '16px',
                   paddingBottom: '12px',
-                  borderBottom: `2px solid ${activeColor}`
+                  borderBottom: `2px solid ${activeColor}`,
+                  gap: '8px'
                 }}>
-                  <h3 style={{
-                    fontWeight: 'bold',
-                    color: activeColor,
-                    fontSize: '15px'
-                  }}>
-                    {stage.name}
-                  </h3>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      autoFocus
+                      defaultValue={stageName}
+                      onBlur={(e) => {
+                        renameStage(activeSector, stage.key, e.target.value.trim() || stage.name);
+                        setEditingStage(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                      }}
+                      style={{
+                        fontWeight: 'bold',
+                        color: activeColor,
+                        fontSize: '15px',
+                        border: `1px solid ${activeColor}`,
+                        borderRadius: '4px',
+                        padding: '2px 6px',
+                        width: '100%'
+                      }}
+                    />
+                  ) : (
+                    <h3 style={{
+                      fontWeight: 'bold',
+                      color: activeColor,
+                      fontSize: '15px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: stage.editable ? 'pointer' : 'default'
+                    }}
+                      onClick={() => stage.editable && setEditingStage(editId)}
+                      title={stage.editable ? 'Clique para renomear esta etapa' : undefined}
+                    >
+                      {stageName}
+                      {stage.editable && <span style={{ fontSize: '12px' }}>✏️</span>}
+                    </h3>
+                  )}
                   <span style={{
                     backgroundColor: activeColor,
                     color: designSystem.colors.neutral.white,
                     padding: '4px 12px',
                     borderRadius: '16px',
                     fontSize: '12px',
-                    fontWeight: '600'
+                    fontWeight: '600',
+                    flexShrink: 0
                   }}>
                     {stageCards.length}
                   </span>
@@ -387,6 +554,44 @@ export function KanbanPage() {
                               {card.notes.substring(0, 50)}...
                             </p>
                           )}
+
+                          {/* Tasks button + pending indicator */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openTasksModal(card);
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '6px',
+                              marginTop: '4px',
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              border: `1px solid ${designSystem.colors.neutral.gray300}`,
+                              backgroundColor: (card.lead?.tasks?.length || 0) > 0
+                                ? `${designSystem.colors.accent.gold}20`
+                                : designSystem.colors.neutral.light,
+                              color: designSystem.colors.primary.dark,
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <span>📌 Tarefas</span>
+                            {(card.lead?.tasks?.length || 0) > 0 && (
+                              <span style={{
+                                backgroundColor: designSystem.colors.accent.gold,
+                                color: designSystem.colors.neutral.white,
+                                borderRadius: '12px',
+                                padding: '2px 8px',
+                                fontSize: '11px'
+                              }}>
+                                {card.lead?.tasks?.length} pendente{(card.lead?.tasks?.length || 0) > 1 ? 's' : ''}
+                              </span>
+                            )}
+                          </button>
                         </div>
                       </div>
                     ))
@@ -411,7 +616,7 @@ export function KanbanPage() {
           color: designSystem.colors.primary.dark,
           margin: 0
         }}>
-          💡 <strong>Dica:</strong> Cada aba (Comercial, Jurídico, Administrativo) é um Kanban isolado com 3 colunas (A Fazer, Em Andamento, Concluído). Arraste os cards entre as colunas para mover os processos dentro do setor.
+          💡 <strong>Dica:</strong> Cada aba (Comercial, Jurídico, Administrativo) é um Kanban isolado com suas próprias etapas. Arraste os cards entre as colunas para mover os processos dentro do setor. Colunas com ✏️ podem ter o nome alterado clicando no título.
         </p>
       </div>
 
@@ -500,6 +705,160 @@ export function KanbanPage() {
               </div>
             );
           })()
+        )}
+      </Modal>
+
+      {/* Tasks/Reminders Modal */}
+      <Modal
+        isOpen={!!taskModalCard}
+        onClose={closeTasksModal}
+        title={`📌 Tarefas - ${taskModalCard?.lead?.name || ''}`}
+        size="medium"
+      >
+        {tasksLoading ? (
+          <p style={{ textAlign: 'center', color: designSystem.colors.neutral.gray500 }}>
+            Carregando tarefas...
+          </p>
+        ) : (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto', marginBottom: '16px' }}>
+              {leadTasks.length === 0 ? (
+                <p style={{ textAlign: 'center', color: designSystem.colors.neutral.gray500, padding: '16px 0' }}>
+                  Nenhuma tarefa cadastrada para este lead.
+                </p>
+              ) : (
+                leadTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${designSystem.colors.neutral.gray300}`,
+                      backgroundColor: task.completed ? `${designSystem.colors.neutral.gray300}20` : designSystem.colors.neutral.white
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => handleToggleTask(task)}
+                      style={{ marginTop: '4px', cursor: 'pointer' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <p style={{
+                        margin: 0,
+                        fontWeight: '600',
+                        fontSize: '14px',
+                        color: designSystem.colors.primary.dark,
+                        textDecoration: task.completed ? 'line-through' : 'none'
+                      }}>
+                        {task.title}
+                      </p>
+                      {task.description && (
+                        <p style={{ margin: '4px 0 0', fontSize: '12px', color: designSystem.colors.neutral.gray600 }}>
+                          {task.description}
+                        </p>
+                      )}
+                      <div style={{ display: 'flex', gap: '12px', marginTop: '4px', fontSize: '11px', color: designSystem.colors.neutral.gray500 }}>
+                        {task.dueDate && <span>📅 {new Date(task.dueDate).toLocaleDateString('pt-BR')}</span>}
+                        {task.attachmentName && <span>📎 {task.attachmentName}</span>}
+                        {task.createdBy?.name && <span>👤 {task.createdBy.name}</span>}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteTask(task)}
+                      style={{
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
+                        color: designSystem.colors.neutral.gray400,
+                        fontSize: '16px'
+                      }}
+                      title="Remover tarefa"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* New task form */}
+            <div style={{
+              borderTop: `1px solid ${designSystem.colors.neutral.gray300}`,
+              paddingTop: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px'
+            }}>
+              <input
+                type="text"
+                placeholder="Título da tarefa..."
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  border: `1px solid ${designSystem.colors.neutral.gray300}`,
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+              />
+              <textarea
+                placeholder="Descrição (opcional)..."
+                value={newTaskDescription}
+                onChange={(e) => setNewTaskDescription(e.target.value)}
+                rows={2}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  border: `1px solid ${designSystem.colors.neutral.gray300}`,
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                  resize: 'vertical'
+                }}
+              />
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <input
+                  type="date"
+                  value={newTaskDueDate}
+                  onChange={(e) => setNewTaskDueDate(e.target.value)}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: `1px solid ${designSystem.colors.neutral.gray300}`,
+                    fontSize: '14px'
+                  }}
+                />
+                <input
+                  type="file"
+                  onChange={(e) => setNewTaskFile(e.target.files?.[0] || null)}
+                  style={{ fontSize: '13px', flex: 1 }}
+                />
+              </div>
+              <button
+                onClick={handleCreateTask}
+                disabled={!newTaskTitle.trim() || savingTask}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: sectorNames[activeSector].color,
+                  color: designSystem.colors.neutral.white,
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  cursor: !newTaskTitle.trim() || savingTask ? 'not-allowed' : 'pointer',
+                  opacity: !newTaskTitle.trim() || savingTask ? 0.6 : 1
+                }}
+              >
+                {savingTask ? 'Salvando...' : '+ Adicionar tarefa'}
+              </button>
+            </div>
+          </>
         )}
       </Modal>
     </div>
