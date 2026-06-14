@@ -30,7 +30,7 @@ const PORT = process.env.PORT || 3000;
 // Origens permitidas: FRONTEND_URL em produção + localhost em desenvolvimento
 const allowedOrigins = new Set<string>();
 if (process.env.FRONTEND_URL) {
-  allowedOrigins.add(process.env.FRONTEND_URL.replace(/\/$/, ''));
+  allowedOrigins.add(process.env.FRONTEND_URL.trim().replace(/\/$/, ''));
 }
 if (process.env.NODE_ENV !== 'production') {
   // Permite qualquer porta local apenas fora de produção
@@ -45,7 +45,12 @@ app.use(cors({
     if (!origin) {
       return callback(null, true);
     }
-    if (allowedOrigins.has(origin)) {
+    const normalizedOrigin = origin.trim().replace(/\/$/, '');
+    if (allowedOrigins.has(normalizedOrigin)) {
+      return callback(null, true);
+    }
+    // Permite previews da Vercel do mesmo projeto (ex: *-git-main-*.vercel.app)
+    if (/^https:\/\/ferramenta-advocacia(-[a-z0-9-]+)?\.vercel\.app$/.test(normalizedOrigin)) {
       return callback(null, true);
     }
     callback(new Error(`CORS: origin '${origin}' not allowed`));
