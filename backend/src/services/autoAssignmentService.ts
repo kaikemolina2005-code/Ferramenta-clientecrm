@@ -373,13 +373,13 @@ class AutoAssignmentService {
 
       return workloads.map(w => ({
         userId: w.user.id,
-        userName: w.user.name,
+        name: w.user.name,
         email: w.user.email,
         role: w.user.role,
         activeLeads: w.activeLeads,
         maxCapacity: w.maxCapacity,
-        utilization: `${w.utilization.toFixed(1)}%`,
-        available: w.isAvailable,
+        utilization: Math.round(w.utilization * 10) / 10,
+        isAvailable: w.isAvailable,
         specialties: JSON.parse(w.specialties || '[]')
       }));
     } catch (error) {
