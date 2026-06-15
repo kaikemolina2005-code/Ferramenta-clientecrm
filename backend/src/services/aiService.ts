@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -14,17 +14,15 @@ interface DocumentAnalysisResult {
   error?: string;
 }
 
-const MODEL = 'claude-haiku-4-5-20251001';
+const MODEL = 'gemini-2.0-flash';
 
 export class AIService {
-  private anthropic: Anthropic;
+  private genAI: GoogleGenerativeAI;
   private apiKey: string;
 
   constructor() {
-    this.apiKey = process.env.ANTHROPIC_API_KEY || '';
-    this.anthropic = new Anthropic({
-      apiKey: this.apiKey,
-    });
+    this.apiKey = process.env.GEMINI_API_KEY || '';
+    this.genAI = new GoogleGenerativeAI(this.apiKey);
   }
 
   /**
@@ -35,11 +33,16 @@ export class AIService {
   }
 
   /**
-   * Extrai o texto de uma resposta da Claude
+   * Chama o Gemini com um system prompt e um user prompt
    */
-  private getResponseText(message: Anthropic.Message): string {
-    const block = message.content.find((b) => b.type === 'text');
-    return block && block.type === 'text' ? block.text : '';
+  private async generate(systemPrompt: string, userPrompt: string): Promise<string> {
+    const model = this.genAI.getGenerativeModel({
+      model: MODEL,
+      systemInstruction: systemPrompt,
+    });
+
+    const result = await model.generateContent(userPrompt);
+    return result.response.text();
   }
 
   /**
@@ -53,7 +56,7 @@ export class AIService {
       if (!this.isConfigured()) {
         return {
           success: false,
-          error: 'Claude API não configurada. Configure ANTHROPIC_API_KEY no .env',
+          error: 'Gemini API não configurada. Configure GEMINI_API_KEY no .env',
         };
       }
 
@@ -76,26 +79,13 @@ export class AIService {
       let systemPrompt = this.getSystemPrompt(detectedType);
       let userPrompt = this.getUserPrompt(fileContent, detectedType);
 
-      // Chamar Claude
-      const response = await this.anthropic.messages.create({
-        model: MODEL,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: userPrompt,
-          },
-        ],
-        temperature: 0.3,
-        max_tokens: 2000,
-      });
-
-      const content = this.getResponseText(response);
+      // Chamar Gemini
+      const content = await this.generate(systemPrompt, userPrompt);
 
       if (!content) {
         return {
           success: false,
-          error: 'Resposta vazia da Claude',
+          error: 'Resposta vazia do Gemini',
         };
       }
 
@@ -133,7 +123,7 @@ export class AIService {
       if (!this.isConfigured()) {
         return {
           success: false,
-          error: 'Claude API não configurada',
+          error: 'Gemini API não configurada',
         };
       }
 
@@ -142,26 +132,17 @@ export class AIService {
         .map(([key, description]) => `- ${key}: ${description}`)
         .join('\n');
 
-      const response = await this.anthropic.messages.create({
-        model: MODEL,
-        system: 'Você é um assistente especializado em extração de dados de documentos.',
-        messages: [
-          {
-            role: 'user',
-            content: `Extraia os seguintes dados do documento abaixo e retorne em formato JSON:
+      const content = await this.generate(
+        'Você é um assistente especializado em extração de dados de documentos.',
+        `Extraia os seguintes dados do documento abaixo e retorne em formato JSON:
 ${schemaDescription}
 
 Documento:
 ${fileContent}
 
-Retorne APENAS um JSON válido com os dados extraídos, sem explicações adicionais.`,
-          },
-        ],
-        temperature: 0.1,
-        max_tokens: 1000,
-      });
+Retorne APENAS um JSON válido com os dados extraídos, sem explicações adicionais.`
+      );
 
-      const content = this.getResponseText(response);
       if (!content) {
         return { success: false, error: 'Resposta vazia' };
       }
@@ -190,30 +171,21 @@ Retorne APENAS um JSON válido com os dados extraídos, sem explicações adicio
       if (!this.isConfigured()) {
         return {
           success: false,
-          error: 'Claude API não configurada',
+          error: 'Gemini API não configurada',
         };
       }
 
       const fileContent = fs.readFileSync(filePath, 'utf-8');
 
-      const response = await this.anthropic.messages.create({
-        model: MODEL,
-        system: 'Você é um assistente especializado em criar resumos concisos de documentos jurídicos.',
-        messages: [
-          {
-            role: 'user',
-            content: `Crie um resumo conciso (máximo 5 pontos) deste documento:
+      const content = await this.generate(
+        'Você é um assistente especializado em criar resumos concisos de documentos jurídicos.',
+        `Crie um resumo conciso (máximo 5 pontos) deste documento:
 
 ${fileContent}
 
-Retorne em formato JSON com: { "summary": "...", "keyPoints": [...] }`,
-          },
-        ],
-        temperature: 0.3,
-        max_tokens: 800,
-      });
+Retorne em formato JSON com: { "summary": "...", "keyPoints": [...] }`
+      );
 
-      const content = this.getResponseText(response);
       if (!content) {
         return { success: false, error: 'Resposta vazia' };
       }
@@ -241,17 +213,12 @@ Retorne em formato JSON com: { "summary": "...", "keyPoints": [...] }`,
   async fillDocumentFields(documentText: string, leadData: any): Promise<string> {
     try {
       if (!this.isConfigured()) {
-        throw new Error('Claude API não configurada');
+        throw new Error('Gemini API não configurada');
       }
 
-      const response = await this.anthropic.messages.create({
-        model: MODEL,
-        system:
-          'Você é um especialista em preenchimento de formulários jurídicos. Complete o formulário com os dados fornecidos.',
-        messages: [
-          {
-            role: 'user',
-            content: `Complete o seguinte formulário com os dados do cliente:
+      return await this.generate(
+        'Você é um especialista em preenchimento de formulários jurídicos. Complete o formulário com os dados fornecidos.',
+        `Complete o seguinte formulário com os dados do cliente:
 
 Formulário:
 ${documentText}
@@ -259,14 +226,8 @@ ${documentText}
 Dados do Cliente:
 ${JSON.stringify(leadData, null, 2)}
 
-Retorne o formulário preenchido com todos os campos completados.`,
-          },
-        ],
-        temperature: 0.2,
-        max_tokens: 2000,
-      });
-
-      return this.getResponseText(response);
+Retorne o formulário preenchido com todos os campos completados.`
+      );
     } catch (error) {
       console.error('Erro ao preencher campos:', error);
       throw error;

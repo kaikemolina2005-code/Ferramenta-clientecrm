@@ -280,11 +280,11 @@ export const getAIStatus = async (_req: AuthenticatedRequest, res: Response): Pr
 
     res.status(200).json({
       configured,
-      provider: 'Anthropic',
-      model: 'claude-haiku-4-5',
+      provider: 'Google Gemini',
+      model: 'gemini-2.0-flash',
       message: configured
         ? 'IA está configurada e pronta para uso'
-        : 'Configure ANTHROPIC_API_KEY no arquivo .env',
+        : 'Configure GEMINI_API_KEY no arquivo .env',
     });
   } catch (error) {
     console.error('Erro ao verificar status da IA:', error);

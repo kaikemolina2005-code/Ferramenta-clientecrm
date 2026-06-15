@@ -292,16 +292,16 @@ export const AIPage: React.FC = () => {
         <div className="bg-gradient-to-r from-blue-500/10 to-blue-500/5 rounded-xl border border-blue-500/20 p-6">
           <h2 className="text-xl font-semibold text-blue-300 mb-4">⚙️ Configurar IA</h2>
           <p className="text-gray-300 mb-4">
-            Para habilitar processamento com IA, configure a chave da Anthropic (Claude) no arquivo{' '}
+            Para habilitar processamento com IA, configure a chave do Google Gemini no arquivo{' '}
             <code className="bg-black/30 px-2 py-1 rounded">.env</code>:
           </p>
           <pre className="bg-black/30 p-4 rounded-lg overflow-x-auto text-sm text-gray-300">
-{`ANTHROPIC_API_KEY="sk-ant-your-api-key-here"`}
+{`GEMINI_API_KEY="sua-chave-aqui"`}
           </pre>
           <p className="text-sm text-gray-400 mt-4">
-            Obtenha sua chave em{' '}
-            <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer" className="text-blue-400">
-              console.anthropic.com/settings/keys
+            Obtenha sua chave gratuitamente em{' '}
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="text-blue-400">
+              aistudio.google.com/apikey
             </a>
           </p>
         </div>
