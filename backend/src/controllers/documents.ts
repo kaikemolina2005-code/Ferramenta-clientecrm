@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import oneDriveService from '../services/oneDriveService.js';
 
 const prisma = new PrismaClient();
 
@@ -75,6 +76,22 @@ export async function uploadDocument(req: any, res: Response) {
     // já que o disco do Render é apagado a cada deploy/restart.
     const fileBuffer = fs.readFileSync(req.file.path);
     const dataUri = `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`;
+
+    // Backup opcional no OneDrive do escritório (não bloqueia o upload se falhar)
+    let oneDriveUrl: string | undefined;
+    if (oneDriveService.isConfigured()) {
+      try {
+        const oneDriveFile = await oneDriveService.uploadFile(
+          fileBuffer,
+          `lead_${leadId}_${req.file.originalname}`,
+          req.file.mimetype
+        );
+        oneDriveUrl = oneDriveFile.webUrl;
+      } catch (error) {
+        console.error('Erro ao enviar backup para o OneDrive:', error);
+      }
+    }
+
     fs.unlinkSync(req.file.path);
 
     const document = await prisma.document.create({
@@ -84,6 +101,7 @@ export async function uploadDocument(req: any, res: Response) {
         name: req.file.originalname,
         type: req.file.mimetype,
         fileUrl: dataUri,
+        oneDriveId: oneDriveUrl,
         isProcessed: false,
       },
     });
