@@ -310,7 +310,9 @@ export const processLeadDocuments = async (req: AuthenticatedRequest, res: Respo
     if (documents.length === 0) {
       res.status(200).json({
         message: 'Nenhum documento para processar',
+        totalDocuments: 0,
         processedCount: 0,
+        results: [],
       });
       return;
     }

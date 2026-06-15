@@ -74,11 +74,11 @@ export const AIPage: React.FC = () => {
       const result = await aiService.processAllDocuments(leadIdInput);
 
       setStats({
-        totalDocuments: result.totalDocuments,
-        successCount: result.processedCount,
+        totalDocuments: result.totalDocuments || 0,
+        successCount: result.processedCount || 0,
       });
 
-      setProcessResults(result.results);
+      setProcessResults(result.results || []);
       setLeadIdInput('');
     } catch (error: any) {
       alert(`Erro: ${error.response?.data?.error || error.message}`);
