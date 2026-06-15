@@ -194,10 +194,38 @@ export const AIPage: React.FC = () => {
               <strong>"Processar Documentos"</strong>.
             </li>
             <li>
-              Aguarde o processamento. O Gemini vai analisar cada documento não processado e exibir o
+              Aguarde o processamento. A IA vai analisar cada documento não processado e exibir o
               tipo, a classificação, o nível de confiança e um resumo do conteúdo.
             </li>
           </ol>
+        </Card>
+      )}
+
+      {/* Para que serve */}
+      {aiStatus?.configured && (
+        <Card title="Como isso ajuda o escritório" icon="💡">
+          <ul className="space-y-3 text-sm" style={{ color: designSystem.colors.neutral.gray600 }}>
+            <li>
+              <strong>Triagem automática de documentos:</strong> quando um cliente envia RG, CPF,
+              comprovante de renda, declarações, contratos, etc., a IA já identifica o tipo e classifica
+              o documento sem alguém precisar abrir e ler manualmente.
+            </li>
+            <li>
+              <strong>Resumo rápido:</strong> em vez de ler o documento inteiro, o advogado/equipe vê um
+              resumo de 2-3 linhas do conteúdo — útil para casos com muitos anexos (ex: processos de
+              INSS, aposentadoria, BPC/LOAS).
+            </li>
+            <li>
+              <strong>Extração de dados:</strong> nomes, CPF, valores, datas, endereços já saem
+              estruturados — pode alimentar formulários/petições automaticamente (função "Preenchimento
+              Automático").
+            </li>
+            <li>
+              <strong>Indicador de confiança:</strong> mostra o quão segura a IA está da classificação,
+              então a equipe sabe quando vale revisar manualmente (confiança baixa) e quando pode
+              confiar direto (confiança alta, como 90-95% nos testes).
+            </li>
+          </ul>
         </Card>
       )}
 

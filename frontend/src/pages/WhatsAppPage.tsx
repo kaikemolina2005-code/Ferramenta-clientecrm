@@ -343,14 +343,66 @@ export const WhatsAppPage: React.FC = () => {
       <Card title="Últimas Mensagens Recebidas" icon="📨" hoverable style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {logs.length === 0 ? (
-            <p style={{
-              textAlign: 'center',
-              color: designSystem.colors.neutral.gray400,
-              padding: '32px 0',
-              margin: 0
-            }}>
-              Nenhuma mensagem recebida
-            </p>
+            <>
+              <p style={{
+                textAlign: 'center',
+                color: designSystem.colors.neutral.gray400,
+                padding: '8px 0 16px',
+                margin: 0
+              }}>
+                Nenhuma mensagem recebida ainda. Veja abaixo um exemplo de como ficará:
+              </p>
+              <div
+                style={{
+                  backgroundColor: designSystem.colors.neutral.light,
+                  borderRadius: '8px',
+                  padding: '12px',
+                  border: `1px dashed ${designSystem.colors.neutral.gray300}`,
+                  opacity: 0.7
+                }}
+              >
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  marginBottom: '8px'
+                }}>
+                  <div>
+                    <p style={{
+                      fontWeight: '600',
+                      color: designSystem.colors.primary.dark,
+                      margin: '0 0 4px 0'
+                    }}>
+                      João da Silva (exemplo)
+                    </p>
+                    <p style={{
+                      fontSize: '12px',
+                      color: designSystem.colors.neutral.gray500,
+                      margin: 0
+                    }}>
+                      5511999999999
+                    </p>
+                  </div>
+                  <span style={{
+                    fontSize: '11px',
+                    color: designSystem.colors.neutral.gray500,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <Clock size={12} />
+                    {new Date().toLocaleString('pt-BR')}
+                  </span>
+                </div>
+                <p style={{
+                  fontSize: '13px',
+                  color: designSystem.colors.neutral.gray600,
+                  margin: 0
+                }}>
+                  Mensagem recebida via WhatsApp: "Olá, gostaria de saber mais sobre o andamento do meu processo."
+                </p>
+              </div>
+            </>
           ) : (
             logs.map((log) => (
               <div
