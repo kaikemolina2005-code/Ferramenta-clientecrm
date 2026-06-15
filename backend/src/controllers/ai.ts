@@ -280,11 +280,11 @@ export const getAIStatus = async (_req: AuthenticatedRequest, res: Response): Pr
 
     res.status(200).json({
       configured,
-      provider: 'OpenAI',
-      model: 'gpt-4o-mini',
+      provider: 'Anthropic',
+      model: 'claude-haiku-4-5',
       message: configured
         ? 'IA está configurada e pronta para uso'
-        : 'Configure OPENAI_API_KEY no arquivo .env',
+        : 'Configure ANTHROPIC_API_KEY no arquivo .env',
     });
   } catch (error) {
     console.error('Erro ao verificar status da IA:', error);

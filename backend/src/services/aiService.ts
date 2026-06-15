@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -14,13 +14,15 @@ interface DocumentAnalysisResult {
   error?: string;
 }
 
+const MODEL = 'claude-haiku-4-5-20251001';
+
 export class AIService {
-  private openai: OpenAI;
+  private anthropic: Anthropic;
   private apiKey: string;
 
   constructor() {
-    this.apiKey = process.env.OPENAI_API_KEY || '';
-    this.openai = new OpenAI({
+    this.apiKey = process.env.ANTHROPIC_API_KEY || '';
+    this.anthropic = new Anthropic({
       apiKey: this.apiKey,
     });
   }
@@ -30,6 +32,14 @@ export class AIService {
    */
   isConfigured(): boolean {
     return !!this.apiKey && this.apiKey !== '';
+  }
+
+  /**
+   * Extrai o texto de uma resposta da Claude
+   */
+  private getResponseText(message: Anthropic.Message): string {
+    const block = message.content.find((b) => b.type === 'text');
+    return block && block.type === 'text' ? block.text : '';
   }
 
   /**
@@ -43,7 +53,7 @@ export class AIService {
       if (!this.isConfigured()) {
         return {
           success: false,
-          error: 'OpenAI API não configurada. Configure OPENAI_API_KEY no .env',
+          error: 'Claude API não configurada. Configure ANTHROPIC_API_KEY no .env',
         };
       }
 
@@ -66,14 +76,11 @@ export class AIService {
       let systemPrompt = this.getSystemPrompt(detectedType);
       let userPrompt = this.getUserPrompt(fileContent, detectedType);
 
-      // Chamar OpenAI
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+      // Chamar Claude
+      const response = await this.anthropic.messages.create({
+        model: MODEL,
+        system: systemPrompt,
         messages: [
-          {
-            role: 'system',
-            content: systemPrompt,
-          },
           {
             role: 'user',
             content: userPrompt,
@@ -83,12 +90,12 @@ export class AIService {
         max_tokens: 2000,
       });
 
-      const content = response.choices[0].message.content;
+      const content = this.getResponseText(response);
 
       if (!content) {
         return {
           success: false,
-          error: 'Resposta vazia da OpenAI',
+          error: 'Resposta vazia da Claude',
         };
       }
 
@@ -126,7 +133,7 @@ export class AIService {
       if (!this.isConfigured()) {
         return {
           success: false,
-          error: 'OpenAI API não configurada',
+          error: 'Claude API não configurada',
         };
       }
 
@@ -135,13 +142,10 @@ export class AIService {
         .map(([key, description]) => `- ${key}: ${description}`)
         .join('\n');
 
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+      const response = await this.anthropic.messages.create({
+        model: MODEL,
+        system: 'Você é um assistente especializado em extração de dados de documentos.',
         messages: [
-          {
-            role: 'system',
-            content: 'Você é um assistente especializado em extração de dados de documentos.',
-          },
           {
             role: 'user',
             content: `Extraia os seguintes dados do documento abaixo e retorne em formato JSON:
@@ -157,7 +161,7 @@ Retorne APENAS um JSON válido com os dados extraídos, sem explicações adicio
         max_tokens: 1000,
       });
 
-      const content = response.choices[0].message.content;
+      const content = this.getResponseText(response);
       if (!content) {
         return { success: false, error: 'Resposta vazia' };
       }
@@ -186,19 +190,16 @@ Retorne APENAS um JSON válido com os dados extraídos, sem explicações adicio
       if (!this.isConfigured()) {
         return {
           success: false,
-          error: 'OpenAI API não configurada',
+          error: 'Claude API não configurada',
         };
       }
 
       const fileContent = fs.readFileSync(filePath, 'utf-8');
 
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+      const response = await this.anthropic.messages.create({
+        model: MODEL,
+        system: 'Você é um assistente especializado em criar resumos concisos de documentos jurídicos.',
         messages: [
-          {
-            role: 'system',
-            content: 'Você é um assistente especializado em criar resumos concisos de documentos jurídicos.',
-          },
           {
             role: 'user',
             content: `Crie um resumo conciso (máximo 5 pontos) deste documento:
@@ -212,7 +213,7 @@ Retorne em formato JSON com: { "summary": "...", "keyPoints": [...] }`,
         max_tokens: 800,
       });
 
-      const content = response.choices[0].message.content;
+      const content = this.getResponseText(response);
       if (!content) {
         return { success: false, error: 'Resposta vazia' };
       }
@@ -240,17 +241,14 @@ Retorne em formato JSON com: { "summary": "...", "keyPoints": [...] }`,
   async fillDocumentFields(documentText: string, leadData: any): Promise<string> {
     try {
       if (!this.isConfigured()) {
-        throw new Error('OpenAI API não configurada');
+        throw new Error('Claude API não configurada');
       }
 
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+      const response = await this.anthropic.messages.create({
+        model: MODEL,
+        system:
+          'Você é um especialista em preenchimento de formulários jurídicos. Complete o formulário com os dados fornecidos.',
         messages: [
-          {
-            role: 'system',
-            content:
-              'Você é um especialista em preenchimento de formulários jurídicos. Complete o formulário com os dados fornecidos.',
-          },
           {
             role: 'user',
             content: `Complete o seguinte formulário com os dados do cliente:
@@ -268,7 +266,7 @@ Retorne o formulário preenchido com todos os campos completados.`,
         max_tokens: 2000,
       });
 
-      return response.choices[0].message.content || '';
+      return this.getResponseText(response);
     } catch (error) {
       console.error('Erro ao preencher campos:', error);
       throw error;
