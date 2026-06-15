@@ -372,7 +372,7 @@ export const AIPage: React.FC = () => {
       {!aiStatus?.configured && (
         <Card title="⚙️ Configurar IA">
           <p className="mb-4" style={{ color: designSystem.colors.neutral.gray600 }}>
-            Para habilitar processamento com IA, configure a chave do Google Gemini no arquivo{' '}
+            Para habilitar processamento com IA, configure a chave da Groq no arquivo{' '}
             <code className="px-2 py-1 rounded" style={{ backgroundColor: designSystem.colors.neutral.gray100 }}>
               .env
             </code>
@@ -382,17 +382,17 @@ export const AIPage: React.FC = () => {
             className="p-4 rounded-lg overflow-x-auto text-sm"
             style={{ backgroundColor: designSystem.colors.neutral.gray100, color: designSystem.colors.neutral.gray600 }}
           >
-{`GEMINI_API_KEY="sua-chave-aqui"`}
+{`GROQ_API_KEY="sua-chave-aqui"`}
           </pre>
           <p className="text-sm mt-4" style={{ color: designSystem.colors.neutral.gray500 }}>
             Obtenha sua chave gratuitamente em{' '}
             <a
-              href="https://aistudio.google.com/apikey"
+              href="https://console.groq.com/keys"
               target="_blank"
               rel="noreferrer"
               style={{ color: designSystem.colors.primary.light }}
             >
-              aistudio.google.com/apikey
+              console.groq.com/keys
             </a>
           </p>
         </Card>

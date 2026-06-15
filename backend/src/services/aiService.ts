@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -14,15 +14,14 @@ interface DocumentAnalysisResult {
   error?: string;
 }
 
-const MODEL = 'gemini-2.0-flash';
+const MODEL = 'llama-3.3-70b-versatile';
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 export class AIService {
-  private genAI: GoogleGenerativeAI;
   private apiKey: string;
 
   constructor() {
-    this.apiKey = process.env.GEMINI_API_KEY || '';
-    this.genAI = new GoogleGenerativeAI(this.apiKey);
+    this.apiKey = process.env.GROQ_API_KEY || '';
   }
 
   /**
@@ -33,16 +32,27 @@ export class AIService {
   }
 
   /**
-   * Chama o Gemini com um system prompt e um user prompt
+   * Chama o Groq com um system prompt e um user prompt
    */
   private async generate(systemPrompt: string, userPrompt: string): Promise<string> {
-    const model = this.genAI.getGenerativeModel({
-      model: MODEL,
-      systemInstruction: systemPrompt,
-    });
+    const response = await axios.post(
+      GROQ_API_URL,
+      {
+        model: MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
-    const result = await model.generateContent(userPrompt);
-    return result.response.text();
+    return response.data.choices[0]?.message?.content || '';
   }
 
   /**
@@ -56,7 +66,7 @@ export class AIService {
       if (!this.isConfigured()) {
         return {
           success: false,
-          error: 'Gemini API não configurada. Configure GEMINI_API_KEY no .env',
+          error: 'Groq API não configurada. Configure GROQ_API_KEY no .env',
         };
       }
 
@@ -79,13 +89,13 @@ export class AIService {
       let systemPrompt = this.getSystemPrompt(detectedType);
       let userPrompt = this.getUserPrompt(fileContent, detectedType);
 
-      // Chamar Gemini
+      // Chamar Groq
       const content = await this.generate(systemPrompt, userPrompt);
 
       if (!content) {
         return {
           success: false,
-          error: 'Resposta vazia do Gemini',
+          error: 'Resposta vazia do Groq',
         };
       }
 
@@ -123,7 +133,7 @@ export class AIService {
       if (!this.isConfigured()) {
         return {
           success: false,
-          error: 'Gemini API não configurada',
+          error: 'Groq API não configurada',
         };
       }
 
@@ -171,7 +181,7 @@ Retorne APENAS um JSON válido com os dados extraídos, sem explicações adicio
       if (!this.isConfigured()) {
         return {
           success: false,
-          error: 'Gemini API não configurada',
+          error: 'Groq API não configurada',
         };
       }
 
@@ -213,7 +223,7 @@ Retorne em formato JSON com: { "summary": "...", "keyPoints": [...] }`
   async fillDocumentFields(documentText: string, leadData: any): Promise<string> {
     try {
       if (!this.isConfigured()) {
-        throw new Error('Gemini API não configurada');
+        throw new Error('Groq API não configurada');
       }
 
       return await this.generate(
