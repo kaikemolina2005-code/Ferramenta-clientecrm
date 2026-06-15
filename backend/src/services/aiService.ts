@@ -56,11 +56,36 @@ export class AIService {
   }
 
   /**
+   * Lê o conteúdo de um documento, seja ele um data URI (base64, salvo no banco)
+   * ou um caminho de arquivo em disco (compatibilidade com documentos antigos)
+   */
+  private readDocument(filePathOrDataUri: string, fallbackName: string): { content: string; fileName: string } {
+    if (filePathOrDataUri.startsWith('data:')) {
+      const matches = filePathOrDataUri.match(/^data:(.+);base64,(.+)$/);
+      if (!matches) {
+        throw new Error('Formato de arquivo inválido');
+      }
+      const buffer = Buffer.from(matches[2], 'base64');
+      return { content: buffer.toString('utf-8'), fileName: fallbackName };
+    }
+
+    if (!fs.existsSync(filePathOrDataUri)) {
+      throw new Error(`Arquivo não encontrado: ${filePathOrDataUri}`);
+    }
+
+    return {
+      content: fs.readFileSync(filePathOrDataUri, 'utf-8'),
+      fileName: path.basename(filePathOrDataUri),
+    };
+  }
+
+  /**
    * Processa um documento com IA
    */
   async analyzeDocument(
     filePath: string,
-    documentType?: string
+    documentType?: string,
+    documentName?: string
   ): Promise<DocumentAnalysisResult> {
     try {
       if (!this.isConfigured()) {
@@ -70,17 +95,20 @@ export class AIService {
         };
       }
 
-      // Ler arquivo
-      if (!fs.existsSync(filePath)) {
+      let fileContent: string;
+      let fileName: string;
+      try {
+        const file = this.readDocument(filePath, documentName || 'documento');
+        fileContent = file.content;
+        fileName = file.fileName;
+      } catch (error) {
         return {
           success: false,
-          error: `Arquivo não encontrado: ${filePath}`,
+          error: error instanceof Error ? error.message : 'Erro ao ler documento',
         };
       }
 
-      const fileContent = fs.readFileSync(filePath, 'utf-8');
-      const fileName = path.basename(filePath);
-      const extension = path.extname(filePath).toLowerCase();
+      const extension = path.extname(fileName).toLowerCase();
 
       // Detectar tipo de documento
       const detectedType = documentType || this.detectDocumentType(fileName, extension);
@@ -137,7 +165,7 @@ export class AIService {
         };
       }
 
-      const fileContent = fs.readFileSync(filePath, 'utf-8');
+      const fileContent = this.readDocument(filePath, 'documento').content;
       const schemaDescription = Object.entries(dataSchema)
         .map(([key, description]) => `- ${key}: ${description}`)
         .join('\n');
@@ -185,7 +213,7 @@ Retorne APENAS um JSON válido com os dados extraídos, sem explicações adicio
         };
       }
 
-      const fileContent = fs.readFileSync(filePath, 'utf-8');
+      const fileContent = this.readDocument(filePath, 'documento').content;
 
       const content = await this.generate(
         'Você é um assistente especializado em criar resumos concisos de documentos jurídicos.',

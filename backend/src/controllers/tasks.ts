@@ -3,7 +3,6 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { taskService } from '../services/taskService.js';
-import oneDriveService from '../services/oneDriveService.js';
 
 const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -63,16 +62,9 @@ export async function createTask(req: any, res: Response) {
 
     if (req.file) {
       attachmentName = req.file.originalname;
-      try {
-        const oneDriveFile = await oneDriveService.uploadFile(
-          req.file.path,
-          `task_${leadId}_${req.file.originalname}`
-        );
-        attachmentUrl = oneDriveFile.webUrl || req.file.path;
-      } catch (oneDriveError) {
-        console.error('Erro ao fazer upload do anexo no OneDrive:', oneDriveError);
-        attachmentUrl = req.file.path;
-      }
+      const fileBuffer = fs.readFileSync(req.file.path);
+      attachmentUrl = `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`;
+      fs.unlinkSync(req.file.path);
     }
 
     const task = await taskService.createTask({

@@ -3,7 +3,6 @@ import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import oneDriveService from '../services/oneDriveService.js';
 
 const prisma = new PrismaClient();
 
@@ -72,65 +71,41 @@ export async function uploadDocument(req: any, res: Response) {
       });
     }
 
-    try {
-      // Fazer upload para OneDrive
-      const oneDriveFile = await oneDriveService.uploadFile(
-        req.file.path,
-        `lead_${leadId}_${req.file.originalname}`
-      );
+    // Salvar o conteúdo do arquivo no banco de dados (data URI em base64),
+    // já que o disco do Render é apagado a cada deploy/restart.
+    const fileBuffer = fs.readFileSync(req.file.path);
+    const dataUri = `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`;
+    fs.unlinkSync(req.file.path);
 
-      // Salvar documento no banco
-      const document = await prisma.document.create({
-        data: {
-          leadId,
-          uploaderId: userId,
-          name: req.file.originalname,
-          type: req.file.mimetype,
-          fileUrl: req.file.path, // URL local temporária
-          oneDriveId: oneDriveFile.id,
-          isProcessed: false,
-        },
-      });
+    const document = await prisma.document.create({
+      data: {
+        leadId,
+        uploaderId: userId,
+        name: req.file.originalname,
+        type: req.file.mimetype,
+        fileUrl: dataUri,
+        isProcessed: false,
+      },
+    });
 
-      // Registrar atividade
-      await prisma.activity.create({
-        data: {
-          userId,
-          leadId,
-          action: 'DOCUMENT_UPLOADED',
-          details: JSON.stringify({
-            fileName: req.file.originalname,
-            fileSize: req.file.size,
-          }),
-        },
-      } as any);
+    // Registrar atividade
+    await prisma.activity.create({
+      data: {
+        userId,
+        leadId,
+        action: 'DOCUMENT_UPLOADED',
+        details: JSON.stringify({
+          fileName: req.file.originalname,
+          fileSize: req.file.size,
+        }),
+      },
+    } as any);
 
-      res.json({
-        success: true,
-        data: document,
-        message: 'Documento enviado com sucesso',
-      });
-    } catch (oneDriveError) {
-      console.error('Erro ao fazer upload no OneDrive:', oneDriveError);
-
-      // Mesmo com erro no OneDrive, salvar localmente
-      const document = await prisma.document.create({
-        data: {
-          leadId,
-          uploaderId: userId,
-          name: req.file.originalname,
-          type: req.file.mimetype,
-          fileUrl: req.file.path,
-          isProcessed: false,
-        },
-      });
-
-      res.status(201).json({
-        success: true,
-        data: document,
-        message: 'Documento salvo localmente (OneDrive indisponível)',
-      });
-    }
+    res.json({
+      success: true,
+      data: document,
+      message: 'Documento enviado com sucesso',
+    });
   } catch (error: any) {
     console.error('Erro ao fazer upload:', error);
 
@@ -194,17 +169,8 @@ export async function deleteDocument(req: any, res: Response) {
       });
     }
 
-    // Tentar deletar do OneDrive
-    if (document.oneDriveId) {
-      try {
-        await oneDriveService.deleteFile(document.oneDriveId);
-      } catch (error) {
-        console.error('Erro ao deletar do OneDrive:', error);
-      }
-    }
-
-    // Deletar arquivo local
-    if (document.fileUrl && fs.existsSync(document.fileUrl)) {
+    // Deletar arquivo local (documentos antigos que ainda referenciam caminho em disco)
+    if (document.fileUrl && !document.fileUrl.startsWith('data:') && fs.existsSync(document.fileUrl)) {
       fs.unlinkSync(document.fileUrl);
     }
 
@@ -246,7 +212,29 @@ export async function downloadDocument(req: any, res: Response) {
       where: { id: documentId },
     });
 
-    if (!document || !document.fileUrl || !fs.existsSync(document.fileUrl)) {
+    if (!document || !document.fileUrl) {
+      return res.status(404).json({
+        success: false,
+        message: 'Documento não encontrado',
+      });
+    }
+
+    if (document.fileUrl.startsWith('data:')) {
+      const matches = document.fileUrl.match(/^data:(.+);base64,(.+)$/);
+      if (!matches) {
+        return res.status(500).json({
+          success: false,
+          message: 'Arquivo armazenado em formato inválido',
+        });
+      }
+      const [, mimeType, base64Data] = matches;
+      const buffer = Buffer.from(base64Data, 'base64');
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${document.name}"`);
+      return res.send(buffer);
+    }
+
+    if (!fs.existsSync(document.fileUrl)) {
       return res.status(404).json({
         success: false,
         message: 'Documento não encontrado',

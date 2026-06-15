@@ -39,7 +39,7 @@ export const analyzeDocument = async (req: AuthenticatedRequest, res: Response):
     }
 
     // Analisar com IA
-    const analysis = await aiService.analyzeDocument(filePath, documentType);
+    const analysis = await aiService.analyzeDocument(filePath, documentType, document.name);
 
     if (!analysis.success) {
       res.status(400).json({
@@ -328,7 +328,7 @@ export const processLeadDocuments = async (req: AuthenticatedRequest, res: Respo
     // Processar cada documento
     const results = [];
     for (const document of documents) {
-      const analysis = await aiService.analyzeDocument(document.fileUrl);
+      const analysis = await aiService.analyzeDocument(document.fileUrl, undefined, document.name);
 
       if (analysis.success) {
         // Atualizar documento
