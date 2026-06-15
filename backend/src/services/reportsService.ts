@@ -273,48 +273,44 @@ export class ReportsService {
    */
   async getTimeSeriesData(days: number = 30) {
     try {
-      const data = [];
       const today = new Date();
+      const startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - (days - 1));
+      startDate.setHours(0, 0, 0, 0);
 
+      const [leads, automations] = await Promise.all([
+        prisma.lead.findMany({
+          where: { createdAt: { gte: startDate } },
+          select: { createdAt: true, status: true, score: true }
+        }),
+        prisma.automationLog.findMany({
+          where: { createdAt: { gte: startDate } },
+          select: { createdAt: true }
+        })
+      ]);
+
+      const data = [];
       for (let i = days - 1; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(date.getDate() - i);
+        date.setHours(0, 0, 0, 0);
         const nextDate = new Date(date);
         nextDate.setDate(nextDate.getDate() + 1);
 
-        const leadsCreated = await prisma.lead.count({
-          where: {
-            createdAt: { gte: date, lt: nextDate }
-          }
-        });
-
-        const converted = await prisma.lead.count({
-          where: {
-            status: 'CONVERTED',
-            createdAt: { gte: date, lt: nextDate }
-          }
-        });
-
-        const automations = await prisma.automationLog.count({
-          where: {
-            createdAt: { gte: date, lt: nextDate }
-          }
-        });
-
-        const avgScore = await prisma.lead.aggregate({
-          _avg: { score: true },
-          where: {
-            createdAt: { gte: date, lt: nextDate }
-          }
-        });
+        const dayLeads = leads.filter(l => l.createdAt >= date && l.createdAt < nextDate);
+        const converted = dayLeads.filter(l => l.status === 'CONVERTED').length;
+        const automationExecutions = automations.filter(a => a.createdAt >= date && a.createdAt < nextDate).length;
+        const avgScore = dayLeads.length > 0
+          ? dayLeads.reduce((sum, l) => sum + l.score, 0) / dayLeads.length
+          : 0;
 
         data.push({
           date: date.toISOString().split('T')[0],
-          leadsCreated,
+          leadsCreated: dayLeads.length,
           converted,
-          conversionRate: leadsCreated > 0 ? Math.round((converted / leadsCreated) * 100) : 0,
-          automationExecutions: automations,
-          avgScore: Math.round((avgScore._avg.score || 0) * 10) / 10
+          conversionRate: dayLeads.length > 0 ? Math.round((converted / dayLeads.length) * 100) : 0,
+          automationExecutions,
+          avgScore: Math.round(avgScore * 10) / 10
         });
       }
 
