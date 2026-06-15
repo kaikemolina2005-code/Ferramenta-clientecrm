@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, CheckCircle, AlertCircle, Zap, BarChart3, FileText } from 'lucide-react';
 import aiService from '@/services/aiService';
+import { Card, Button, Badge } from '@/components/TopBar';
+import { designSystem } from '@/theme/designSystem';
 
 interface AIStatus {
   configured: boolean;
@@ -28,6 +30,7 @@ export const AIPage: React.FC = () => {
   const [processingLeadId, setProcessingLeadId] = useState('');
   const [leadIdInput, setLeadIdInput] = useState('');
   const [processResults, setProcessResults] = useState<DocumentResult[]>([]);
+  const [emptyMessage, setEmptyMessage] = useState<string | null>(null);
   const [stats, setStats] = useState<{ totalDocuments: number; successCount: number }>({
     totalDocuments: 0,
     successCount: 0,
@@ -70,15 +73,25 @@ export const AIPage: React.FC = () => {
     try {
       setLoading(true);
       setProcessingLeadId(leadIdInput);
+      setEmptyMessage(null);
+      setProcessResults([]);
+      setStats({ totalDocuments: 0, successCount: 0 });
 
       const result = await aiService.processAllDocuments(leadIdInput);
 
-      setStats({
-        totalDocuments: result.totalDocuments || 0,
-        successCount: result.processedCount || 0,
-      });
+      const totalDocuments = result.totalDocuments || 0;
+      const successCount = result.processedCount || 0;
+      const results = result.results || [];
 
-      setProcessResults(result.results || []);
+      setStats({ totalDocuments, successCount });
+      setProcessResults(results);
+
+      if (totalDocuments === 0) {
+        setEmptyMessage(
+          'Nenhum documento encontrado para este lead. Faça upload de um documento na página "Documentos" ou no cadastro do lead e tente novamente.'
+        );
+      }
+
       setLeadIdInput('');
     } catch (error: any) {
       alert(`Erro: ${error.response?.data?.error || error.message}`);
@@ -89,26 +102,17 @@ export const AIPage: React.FC = () => {
   };
 
   const getStatusBadge = (configured: boolean) => {
-    if (configured) {
-      return (
-        <div className="flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-lg">
-          <CheckCircle size={20} />
-          <span>Configurado e Ativo</span>
-        </div>
-      );
-    }
     return (
-      <div className="flex items-center gap-2 bg-yellow-100 text-yellow-700 px-4 py-2 rounded-lg">
-        <AlertCircle size={20} />
-        <span>Não Configurado</span>
-      </div>
+      <Badge variant={configured ? 'success' : 'warning'}>
+        {configured ? '✅ Configurado e Ativo' : '⚠️ Não Configurado'}
+      </Badge>
     );
   };
 
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.9) return 'bg-green-500/20 text-green-300';
-    if (confidence >= 0.7) return 'bg-yellow-500/20 text-yellow-300';
-    return 'bg-red-500/20 text-red-300';
+  const getConfidenceVariant = (confidence: number): 'success' | 'warning' | 'error' => {
+    if (confidence >= 0.9) return 'success';
+    if (confidence >= 0.7) return 'warning';
+    return 'error';
   };
 
   return (
@@ -116,13 +120,16 @@ export const AIPage: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <Brain size={32} className="text-blue-400" />
-          <h1 className="text-3xl font-bold text-white">Document AI Processing</h1>
+          <Brain size={32} style={{ color: designSystem.colors.primary.dark }} />
+          <h1 className="text-3xl font-bold" style={{ color: designSystem.colors.primary.dark }}>
+            Processamento de Documentos com IA
+          </h1>
         </div>
         <button
           onClick={loadAIStatus}
           disabled={loading}
-          className="p-2 hover:bg-white/10 rounded-lg transition"
+          className="p-2 rounded-lg transition hover:bg-gray-100"
+          style={{ color: designSystem.colors.primary.dark }}
         >
           <Zap size={20} className={loading ? 'animate-spin' : ''} />
         </button>
@@ -130,181 +137,265 @@ export const AIPage: React.FC = () => {
 
       {/* Erro ao carregar status */}
       {statusError && (
-        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-300 px-4 py-3 rounded-lg">
+        <div
+          className="flex items-center gap-2 px-4 py-3 rounded-lg"
+          style={{ backgroundColor: '#f8d7da', color: designSystem.colors.status.error }}
+        >
           <AlertCircle size={20} />
           <span>{statusError}</span>
         </div>
       )}
 
       {/* Status */}
-      <div className="bg-gradient-to-r from-white/5 to-white/10 rounded-xl border border-white/10 p-6">
-        <h2 className="text-xl font-semibold text-white mb-4">Status da IA</h2>
+      <Card title="Status da IA" icon="🧠">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <span className="text-gray-300">Status:</span>
+            <span style={{ color: designSystem.colors.neutral.gray500 }}>Status:</span>
             {aiStatus && getStatusBadge(aiStatus.configured)}
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-gray-300">Provider:</span>
-            <code className="bg-black/30 px-3 py-1 rounded text-sm">
+            <span style={{ color: designSystem.colors.neutral.gray500 }}>Provider:</span>
+            <code
+              className="px-3 py-1 rounded text-sm"
+              style={{ backgroundColor: designSystem.colors.neutral.gray100, color: designSystem.colors.primary.dark }}
+            >
               {aiStatus?.provider || 'Carregando...'}
             </code>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-gray-300">Modelo:</span>
-            <code className="bg-black/30 px-3 py-1 rounded text-sm">
+            <span style={{ color: designSystem.colors.neutral.gray500 }}>Modelo:</span>
+            <code
+              className="px-3 py-1 rounded text-sm"
+              style={{ backgroundColor: designSystem.colors.neutral.gray100, color: designSystem.colors.primary.dark }}
+            >
               {aiStatus?.model || 'Carregando...'}
             </code>
           </div>
-          <p className="text-sm text-gray-400 pt-2">{aiStatus?.message}</p>
+          <p className="text-sm pt-2" style={{ color: designSystem.colors.neutral.gray500 }}>
+            {aiStatus?.message}
+          </p>
         </div>
-      </div>
+      </Card>
+
+      {/* Como testar */}
+      {aiStatus?.configured && (
+        <Card title="Como testar a IA" icon="📝">
+          <ol className="space-y-2 text-sm list-decimal list-inside" style={{ color: designSystem.colors.neutral.gray600 }}>
+            <li>
+              Vá até a página <strong>Documentos</strong> (ou abra o cadastro de um lead) e faça o
+              upload de um arquivo (ex: PDF ou TXT) vinculado a um lead.
+            </li>
+            <li>
+              Copie o <strong>ID do lead</strong> ao qual o documento foi vinculado (ele aparece na
+              listagem de leads ou na URL da página do lead).
+            </li>
+            <li>
+              Cole o ID no campo <strong>"ID do Lead"</strong> abaixo e clique em{' '}
+              <strong>"Processar Documentos"</strong>.
+            </li>
+            <li>
+              Aguarde o processamento. O Gemini vai analisar cada documento não processado e exibir o
+              tipo, a classificação, o nível de confiança e um resumo do conteúdo.
+            </li>
+          </ol>
+        </Card>
+      )}
 
       {/* Processar Documentos */}
       {aiStatus?.configured && (
-        <div className="bg-gradient-to-r from-white/5 to-white/10 rounded-xl border border-white/10 p-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Processar Documentos de um Lead</h2>
+        <Card title="Processar Documentos de um Lead" icon="⚙️">
           <div className="space-y-3">
             <div>
-              <label className="block text-sm text-gray-300 mb-2">ID do Lead</label>
+              <label className="block text-sm mb-2" style={{ color: designSystem.colors.neutral.gray600 }}>
+                ID do Lead
+              </label>
               <input
                 type="text"
                 placeholder="ex: clh7q4qp80000qz900hqkcy"
                 value={leadIdInput}
                 onChange={(e) => setLeadIdInput(e.target.value)}
-                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-500"
+                className="w-full rounded-lg px-4 py-2"
+                style={{
+                  backgroundColor: designSystem.colors.neutral.white,
+                  border: `1px solid ${designSystem.colors.neutral.gray300}`,
+                  color: designSystem.colors.neutral.black,
+                }}
               />
             </div>
-            <button
+            <Button
               onClick={handleProcessLeadDocuments}
               disabled={loading || !leadIdInput.trim()}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white py-2 rounded-lg flex items-center justify-center gap-2 transition"
+              className="w-full flex items-center justify-center gap-2"
             >
               <Brain size={18} />
               {loading && processingLeadId === leadIdInput ? 'Processando...' : 'Processar Documentos'}
-            </button>
+            </Button>
           </div>
+        </Card>
+      )}
+
+      {/* Mensagem de nenhum documento */}
+      {emptyMessage && (
+        <div
+          className="flex items-center gap-2 px-4 py-3 rounded-lg"
+          style={{ backgroundColor: '#fff3cd', color: designSystem.colors.status.warning }}
+        >
+          <AlertCircle size={20} />
+          <span>{emptyMessage}</span>
         </div>
       )}
 
       {/* Resultados */}
       {stats.totalDocuments > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-gradient-to-r from-white/5 to-white/10 rounded-xl border border-white/10 p-6">
+          <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-300 text-sm">Total de Documentos</p>
-                <p className="text-3xl font-bold text-white mt-2">{stats.totalDocuments}</p>
+                <p className="text-sm" style={{ color: designSystem.colors.neutral.gray500 }}>
+                  Total de Documentos
+                </p>
+                <p className="text-3xl font-bold mt-2" style={{ color: designSystem.colors.primary.dark }}>
+                  {stats.totalDocuments}
+                </p>
               </div>
-              <FileText size={32} className="text-blue-400/50" />
+              <FileText size={32} style={{ color: designSystem.colors.primary.light }} />
             </div>
-          </div>
+          </Card>
 
-          <div className="bg-gradient-to-r from-white/5 to-white/10 rounded-xl border border-white/10 p-6">
+          <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-300 text-sm">Processados com Sucesso</p>
-                <p className="text-3xl font-bold text-green-400 mt-2">{stats.successCount}</p>
+                <p className="text-sm" style={{ color: designSystem.colors.neutral.gray500 }}>
+                  Processados com Sucesso
+                </p>
+                <p className="text-3xl font-bold mt-2" style={{ color: designSystem.colors.status.success }}>
+                  {stats.successCount}
+                </p>
               </div>
-              <CheckCircle size={32} className="text-green-400/50" />
+              <CheckCircle size={32} style={{ color: designSystem.colors.status.success }} />
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* Detalhes dos Resultados */}
       {processResults.length > 0 && (
-        <div className="bg-gradient-to-r from-white/5 to-white/10 rounded-xl border border-white/10 p-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Resultados da Análise</h2>
+        <Card title="Resultados da Análise" icon="📊">
           <div className="space-y-3">
             {processResults.map((result) => (
               <div
                 key={result.documentId}
-                className={`p-4 rounded-lg border ${
-                  result.success
-                    ? 'bg-green-500/10 border-green-500/20'
-                    : 'bg-red-500/10 border-red-500/20'
-                }`}
+                className="p-4 rounded-lg border"
+                style={{
+                  backgroundColor: result.success ? '#d4edda' : '#f8d7da',
+                  borderColor: result.success ? designSystem.colors.status.success : designSystem.colors.status.error,
+                }}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-semibold text-white">Documento {result.documentId.substring(0, 8)}</p>
-                  </div>
+                  <p className="font-semibold" style={{ color: designSystem.colors.neutral.black }}>
+                    Documento {result.documentId.substring(0, 8)}
+                  </p>
                   {result.success ? (
-                    <CheckCircle size={20} className="text-green-400" />
+                    <CheckCircle size={20} style={{ color: designSystem.colors.status.success }} />
                   ) : (
-                    <AlertCircle size={20} className="text-red-400" />
+                    <AlertCircle size={20} style={{ color: designSystem.colors.status.error }} />
                   )}
                 </div>
 
                 {result.success && result.analysis && (
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Tipo:</span>
-                      <span className="text-white">{result.analysis.documentType}</span>
+                      <span style={{ color: designSystem.colors.neutral.gray500 }}>Tipo:</span>
+                      <span style={{ color: designSystem.colors.neutral.black }}>{result.analysis.documentType}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Classificação:</span>
-                      <span className="text-white">{result.analysis.classification}</span>
+                      <span style={{ color: designSystem.colors.neutral.gray500 }}>Classificação:</span>
+                      <span style={{ color: designSystem.colors.neutral.black }}>{result.analysis.classification}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Confiança:</span>
-                      <span className={`px-2 py-1 rounded text-xs ${getConfidenceColor(result.analysis.confidence)}`}>
+                    <div className="flex justify-between items-center">
+                      <span style={{ color: designSystem.colors.neutral.gray500 }}>Confiança:</span>
+                      <Badge variant={getConfidenceVariant(result.analysis.confidence)} size="sm">
                         {(result.analysis.confidence * 100).toFixed(0)}%
-                      </span>
+                      </Badge>
                     </div>
-                    <p className="text-gray-300 mt-2">{result.analysis.summary}</p>
+                    <p className="mt-2" style={{ color: designSystem.colors.neutral.gray600 }}>
+                      {result.analysis.summary}
+                    </p>
                   </div>
                 )}
 
                 {!result.success && result.error && (
-                  <p className="text-red-300 text-sm">{result.error}</p>
+                  <p className="text-sm" style={{ color: designSystem.colors.status.error }}>
+                    {result.error}
+                  </p>
                 )}
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Recursos */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-r from-blue-500/10 to-blue-500/5 rounded-xl border border-blue-500/20 p-6">
-          <BarChart3 size={24} className="text-blue-400 mb-3" />
-          <h3 className="font-semibold text-white mb-2">Análise de Documentos</h3>
-          <p className="text-sm text-gray-300">Extrai informações automáticas de qualquer documento</p>
-        </div>
+        <Card>
+          <BarChart3 size={24} style={{ color: designSystem.colors.primary.light }} className="mb-3" />
+          <h3 className="font-semibold mb-2" style={{ color: designSystem.colors.primary.dark }}>
+            Análise de Documentos
+          </h3>
+          <p className="text-sm" style={{ color: designSystem.colors.neutral.gray500 }}>
+            Extrai informações automáticas de qualquer documento
+          </p>
+        </Card>
 
-        <div className="bg-gradient-to-r from-green-500/10 to-green-500/5 rounded-xl border border-green-500/20 p-6">
-          <FileText size={24} className="text-green-400 mb-3" />
-          <h3 className="font-semibold text-white mb-2">Classificação Inteligente</h3>
-          <p className="text-sm text-gray-300">Categoriza automaticamente o tipo de documento</p>
-        </div>
+        <Card>
+          <FileText size={24} style={{ color: designSystem.colors.status.success }} className="mb-3" />
+          <h3 className="font-semibold mb-2" style={{ color: designSystem.colors.primary.dark }}>
+            Classificação Inteligente
+          </h3>
+          <p className="text-sm" style={{ color: designSystem.colors.neutral.gray500 }}>
+            Categoriza automaticamente o tipo de documento
+          </p>
+        </Card>
 
-        <div className="bg-gradient-to-r from-purple-500/10 to-purple-500/5 rounded-xl border border-purple-500/20 p-6">
-          <Brain size={24} className="text-purple-400 mb-3" />
-          <h3 className="font-semibold text-white mb-2">Preenchimento Automático</h3>
-          <p className="text-sm text-gray-300">Preenche formulários com dados do cliente</p>
-        </div>
+        <Card>
+          <Brain size={24} style={{ color: designSystem.colors.accent.dark }} className="mb-3" />
+          <h3 className="font-semibold mb-2" style={{ color: designSystem.colors.primary.dark }}>
+            Preenchimento Automático
+          </h3>
+          <p className="text-sm" style={{ color: designSystem.colors.neutral.gray500 }}>
+            Preenche formulários com dados do cliente
+          </p>
+        </Card>
       </div>
 
       {/* Configuração */}
       {!aiStatus?.configured && (
-        <div className="bg-gradient-to-r from-blue-500/10 to-blue-500/5 rounded-xl border border-blue-500/20 p-6">
-          <h2 className="text-xl font-semibold text-blue-300 mb-4">⚙️ Configurar IA</h2>
-          <p className="text-gray-300 mb-4">
+        <Card title="⚙️ Configurar IA">
+          <p className="mb-4" style={{ color: designSystem.colors.neutral.gray600 }}>
             Para habilitar processamento com IA, configure a chave do Google Gemini no arquivo{' '}
-            <code className="bg-black/30 px-2 py-1 rounded">.env</code>:
+            <code className="px-2 py-1 rounded" style={{ backgroundColor: designSystem.colors.neutral.gray100 }}>
+              .env
+            </code>
+            :
           </p>
-          <pre className="bg-black/30 p-4 rounded-lg overflow-x-auto text-sm text-gray-300">
+          <pre
+            className="p-4 rounded-lg overflow-x-auto text-sm"
+            style={{ backgroundColor: designSystem.colors.neutral.gray100, color: designSystem.colors.neutral.gray600 }}
+          >
 {`GEMINI_API_KEY="sua-chave-aqui"`}
           </pre>
-          <p className="text-sm text-gray-400 mt-4">
+          <p className="text-sm mt-4" style={{ color: designSystem.colors.neutral.gray500 }}>
             Obtenha sua chave gratuitamente em{' '}
-            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="text-blue-400">
+            <a
+              href="https://aistudio.google.com/apikey"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: designSystem.colors.primary.light }}
+            >
               aistudio.google.com/apikey
             </a>
           </p>
-        </div>
+        </Card>
       )}
     </div>
   );
