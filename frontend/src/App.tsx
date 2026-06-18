@@ -8,6 +8,7 @@ import { KanbanPage } from '@/pages/KanbanPage'
 import { DocumentsPage } from '@/pages/DocumentsPage'
 import { WhatsAppPage } from '@/pages/WhatsAppPage'
 import { AIPage } from '@/pages/AIPage'
+import { TasksPage } from '@/pages/TasksPage'
 import AutomationDashboard from '@/pages/AutomationDashboard'
 import ReportsPage from '@/pages/ReportsPage'
 
@@ -79,6 +80,14 @@ function App() {
             element={
               <Layout>
                 <ReportsPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/tarefas"
+            element={
+              <Layout>
+                <TasksPage />
               </Layout>
             }
           />

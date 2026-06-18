@@ -208,6 +208,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </Link>
 
             <Link
+              to="/tarefas"
+              className="flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white hover:bg-opacity-10"
+              style={{ color: designSystem.colors.neutral.white }}
+              onClick={() => setSidebarOpen(false)}
+            >
+              <span className="mr-3">✅</span>
+              <span>Tarefas</span>
+            </Link>
+
+            <Link
               to="/documentos"
               className="flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white hover:bg-opacity-10"
               style={{ color: designSystem.colors.neutral.white }}

@@ -24,6 +24,21 @@ export const upload = multer({
   limits: { fileSize: 4 * 1024 * 1024 }, // 4MB
 });
 
+export async function getAllTasks(req: any, res: Response) {
+  try {
+    const { completed, leadId } = req.query;
+    const filters: any = {};
+    if (completed !== undefined) filters.completed = completed === 'true';
+    if (leadId) filters.leadId = leadId as string;
+
+    const tasks = await taskService.getAllTasks(filters);
+    res.json({ success: true, data: tasks, total: tasks.length });
+  } catch (error: any) {
+    console.error('Erro ao listar tarefas:', error);
+    res.status(500).json({ success: false, message: 'Erro ao listar tarefas' });
+  }
+}
+
 export async function getLeadTasks(req: any, res: Response) {
   try {
     const { leadId } = req.params;

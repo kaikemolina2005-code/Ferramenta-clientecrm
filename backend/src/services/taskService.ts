@@ -19,6 +19,23 @@ export class TaskService {
   }
 
   /**
+   * Listar todas as tarefas (com dados do lead vinculado)
+   */
+  async getAllTasks(filters?: { completed?: boolean; leadId?: string }): Promise<LeadTask[]> {
+    return prisma.leadTask.findMany({
+      where: {
+        ...(filters?.completed !== undefined && { completed: filters.completed }),
+        ...(filters?.leadId && { leadId: filters.leadId }),
+      },
+      include: {
+        lead: { select: { id: true, name: true, phone: true } },
+        createdBy: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: [{ completed: 'asc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  /**
    * Contar tarefas pendentes por lead (para indicador no card do Kanban)
    */
   async countPendingByLeadIds(leadIds: string[]): Promise<Record<string, number>> {

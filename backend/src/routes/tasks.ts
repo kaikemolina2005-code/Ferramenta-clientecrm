@@ -8,6 +8,9 @@ const router = Router();
 // Middleware - All routes require authentication
 router.use(authMiddleware);
 
+// GET /tasks - List all tasks (with optional ?completed=true/false&leadId=xxx)
+router.get('/', tasksController.getAllTasks);
+
 // GET /tasks/lead/:leadId - List tasks for a lead
 router.get('/lead/:leadId', tasksController.getLeadTasks);
 
