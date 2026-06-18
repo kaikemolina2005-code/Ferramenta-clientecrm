@@ -12,6 +12,7 @@ export class LeadService {
     phone: string;
     email: string;
     cpf?: string;
+    whatsappId?: string;
     birthDate?: Date;
     address?: string;
     city?: string;
@@ -27,6 +28,7 @@ export class LeadService {
         phone: data.phone,
         email: data.email,
         cpf: data.cpf || '',
+        whatsappId: data.whatsappId || null,
         birthDate: data.birthDate,
         address: data.address,
         city: data.city,

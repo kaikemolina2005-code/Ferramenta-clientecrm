@@ -13,6 +13,7 @@ export function LeadsPage() {
     phone: '',
     email: '',
     cpf: '',
+    whatsappId: '',
     city: '',
     state: '',
     category: 'CONSULTATION',
@@ -49,6 +50,7 @@ export function LeadsPage() {
         phone: '',
         email: '',
         cpf: '',
+        whatsappId: '',
         city: '',
         state: '',
         category: 'CONSULTATION',
@@ -195,6 +197,35 @@ export function LeadsPage() {
                 onFocus={(e) => e.currentTarget.style.borderColor = designSystem.colors.primary.dark}
                 onBlur={(e) => e.currentTarget.style.borderColor = designSystem.colors.neutral.gray300}
                 required
+              />
+            </div>
+
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: designSystem.colors.primary.dark,
+                marginBottom: '8px'
+              }}>
+                WhatsApp (com código do país, ex: 5511999990000)
+              </label>
+              <input
+                type="tel"
+                placeholder="5511999990000"
+                value={formData.whatsappId}
+                onChange={(e) => setFormData({ ...formData, whatsappId: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '10px 16px',
+                  border: `1px solid ${designSystem.colors.neutral.gray300}`,
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontFamily: 'Segoe UI, sans-serif',
+                  transition: designSystem.transitions.normal
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = designSystem.colors.primary.dark}
+                onBlur={(e) => e.currentTarget.style.borderColor = designSystem.colors.neutral.gray300}
               />
             </div>
 
