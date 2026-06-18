@@ -249,9 +249,23 @@ export const TasksPage: React.FC = () => {
               <input type="file" ref={fileRef} style={{ fontSize: '14px' }} />
             </div>
             <div className="flex gap-3">
-              <Button type="submit" disabled={submitting}>
+              <button
+                type="submit"
+                disabled={submitting}
+                style={{
+                  backgroundColor: '#1a3a6b',
+                  color: '#fff',
+                  padding: '8px 20px',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  border: 'none',
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  opacity: submitting ? 0.7 : 1,
+                }}
+              >
                 {submitting ? 'Salvando...' : 'Criar Tarefa'}
-              </Button>
+              </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
