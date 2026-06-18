@@ -2,6 +2,9 @@ import { Request, Response } from 'express';
 import { whatsappService } from '../services/whatsappService.js';
 import { kanbanService } from '../services/kanbanService.js';
 import { socketService } from '../socket/service.js';
+import { aiService } from '../services/aiService.js';
+import { oneDriveService } from '../services/oneDriveService.js';
+import { downloadWhatsAppMedia, sendWhatsAppText, mimeToExt, mimeToLabel } from '../services/whatsappMediaService.js';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -122,6 +125,9 @@ export const receiveMessage = async (req: Request, res: Response): Promise<void>
       }
     }
 
+    // Processar mensagens de mídia (imagem, documento, áudio, vídeo)
+    await processMediaMessages(payload);
+
     // Confirmar recebimento ao WhatsApp
     res.status(200).json({ success: true, messages_processed: messages.length });
   } catch (error) {
@@ -129,6 +135,128 @@ export const receiveMessage = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ error: 'Erro ao receber mensagem' });
   }
 };
+
+/**
+ * Processa mensagens de mídia recebidas via WhatsApp.
+ * Baixa o arquivo, classifica com IA, salva no banco (e OneDrive se configurado)
+ * e envia confirmação ao cliente.
+ */
+async function processMediaMessages(payload: any): Promise<void> {
+  try {
+    const entries = payload?.entry || [];
+    for (const entry of entries) {
+      for (const change of entry.changes || []) {
+        const messages = change.value?.messages || [];
+        const contacts = change.value?.contacts || [];
+        const senderName = contacts[0]?.profile?.name || 'Cliente';
+
+        for (const msg of messages) {
+          const mediaTypes = ['image', 'document', 'audio', 'video', 'sticker'];
+          if (!mediaTypes.includes(msg.type)) continue;
+
+          const from: string = msg.from;
+          const mediaData = msg[msg.type] as any;
+          const mediaId: string = mediaData?.id;
+          const originalFileName: string = mediaData?.filename || '';
+
+          if (!mediaId) continue;
+
+          console.log(`📎 Mídia recebida de ${senderName} (${from}): tipo=${msg.type}`);
+
+          try {
+            // 1. Encontrar lead pelo número de WhatsApp
+            const lead = await prisma.lead.findFirst({ where: { whatsappId: from } });
+            if (!lead) {
+              console.warn(`Lead não encontrado para whatsappId=${from}. Mídia ignorada.`);
+              await sendWhatsAppText(
+                from,
+                `Olá ${senderName}! Recebi seu arquivo, mas ainda não encontrei seu cadastro. Por favor, entre em contato com o escritório para que possamos te registrar. 📋`
+              );
+              continue;
+            }
+
+            // 2. Baixar arquivo da API do WhatsApp
+            const { buffer, mimeType, fileName } = await downloadWhatsAppMedia(mediaId);
+            const finalFileName = originalFileName || fileName;
+            const dataUri = `data:${mimeType};base64,${buffer.toString('base64')}`;
+
+            // 3. Classificar com IA (best-effort — não bloqueia se falhar)
+            let aiClassification = '';
+            try {
+              const analysis = await aiService.analyzeDocument(dataUri, undefined, finalFileName);
+              if (analysis.success && analysis.documentType) {
+                aiClassification = analysis.documentType;
+                console.log(`🧠 IA classificou como: ${aiClassification} (${((analysis.confidence || 0) * 100).toFixed(0)}%)`);
+              }
+            } catch (aiErr) {
+              console.warn('IA não disponível para classificar arquivo:', aiErr);
+            }
+
+            // 4. Salvar no banco de dados vinculado ao lead
+            const adminUser = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+            const document = await prisma.document.create({
+              data: {
+                leadId: lead.id,
+                uploaderId: adminUser?.id || lead.id,
+                name: finalFileName,
+                type: mimeType,
+                fileUrl: dataUri,
+                processedBy: aiClassification || null,
+                isProcessed: !!aiClassification,
+              },
+            });
+
+            // 5. Backup no OneDrive na pasta do lead (se configurado)
+            if (oneDriveService.isConfigured()) {
+              try {
+                const folderName = `Lead_${lead.name.replace(/[^a-zA-Z0-9 ]/g, '_')}`;
+                const oneDriveResult = await oneDriveService.uploadFile(buffer, `${folderName}/${finalFileName}`, mimeType);
+                await prisma.document.update({
+                  where: { id: document.id },
+                  data: { oneDriveId: oneDriveResult.webUrl },
+                });
+                console.log(`☁️ Arquivo salvo no OneDrive: ${folderName}/${finalFileName}`);
+              } catch (odErr) {
+                console.warn('Erro ao salvar no OneDrive (arquivo salvo no banco):', odErr);
+              }
+            }
+
+            // 6. Registrar atividade
+            if (adminUser) {
+              await prisma.activity.create({
+                data: {
+                  userId: adminUser.id,
+                  leadId: lead.id,
+                  action: 'whatsapp_file_received',
+                  details: JSON.stringify({
+                    fileName: finalFileName,
+                    mimeType,
+                    aiClassification,
+                    documentId: document.id,
+                  }),
+                },
+              });
+            }
+
+            // 7. Enviar confirmação ao cliente
+            const label = mimeToLabel(mimeType);
+            const classLabel = aiClassification ? ` (${aiClassification})` : '';
+            await sendWhatsAppText(
+              from,
+              `✅ Recebi seu ${label}${classLabel}, ${lead.name.split(' ')[0]}! O arquivo já está salvo no seu processo. Caso precise de mais informações, nossa equipe entrará em contato em breve. 📂`
+            );
+
+            console.log(`✅ Arquivo de ${lead.name} salvo com sucesso (doc ID: ${document.id})`);
+          } catch (mediaErr) {
+            console.error(`Erro ao processar mídia de ${from}:`, mediaErr);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Erro ao processar mensagens de mídia:', error);
+  }
+}
 
 /**
  * Obtém status de conexão com WhatsApp
