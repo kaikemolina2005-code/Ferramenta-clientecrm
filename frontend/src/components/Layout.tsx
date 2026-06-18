@@ -62,13 +62,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Animated collapsible sidebar */}
         <CRMSidebar />
 
-        {/* Main content — offset by collapsed sidebar width (3.5rem) */}
         <main
           className="flex-1 overflow-auto"
-          style={{
-            marginLeft: '3.5rem',
-            backgroundColor: designSystem.colors.neutral.light,
-          }}
+          style={{ backgroundColor: designSystem.colors.neutral.light }}
         >
           <div className="p-4 md:p-8">{children}</div>
         </main>

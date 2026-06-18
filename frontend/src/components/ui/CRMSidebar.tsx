@@ -67,7 +67,7 @@ export function CRMSidebar() {
       transition={transition}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
-      className="fixed left-0 top-0 h-full z-40 flex flex-col shrink-0 overflow-hidden"
+      className="relative h-screen z-40 flex flex-col shrink-0 overflow-hidden"
       style={{
         backgroundColor: PRIMARY,
         borderRight: `2px solid ${GOLD}`,
