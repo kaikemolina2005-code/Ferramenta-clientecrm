@@ -30,13 +30,17 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 3000
-      DATABASE_URL: postgresql://${DB_USER:-advocacia_user}:${DB_PASSWORD:-mude_em_producao}@postgres:5432/${DB_NAME:-advocacia_crm}
+      DATABASE_URL: ${DATABASE_URL}
+      DIRECT_URL: ${DIRECT_URL}
       JWT_SECRET: ${JWT_SECRET:-mude_esta_chave_em_producao}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      BACKEND_URL: ${BACKEND_URL:-http://localhost:3000}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY}
       WHATSAPP_WEBHOOK_TOKEN: ${WHATSAPP_WEBHOOK_TOKEN}
-      WHATSAPP_API_KEY: ${WHATSAPP_API_KEY}
+      WHATSAPP_BUSINESS_PHONE_ID: ${WHATSAPP_BUSINESS_PHONE_ID}
+      WHATSAPP_BUSINESS_ACCESS_TOKEN: ${WHATSAPP_BUSINESS_ACCESS_TOKEN}
+      WHATSAPP_BUSINESS_ACCOUNT_ID: ${WHATSAPP_BUSINESS_ACCOUNT_ID}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     ports:
       - "3000:3000"
