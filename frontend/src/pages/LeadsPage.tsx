@@ -58,6 +58,7 @@ import {
 import Card from '@/components/horizon/Card';
 import { leadService } from '@/services/leadService';
 import type { Lead } from '@/types';
+import { DEMO_FALLBACK, demoLeads } from '@/utils/demoData';
 
 const STATUS_META: Record<string, { label: string; colorScheme: string }> = {
   INITIAL: { label: 'Inicial', colorScheme: 'blue' },
@@ -111,10 +112,11 @@ export function LeadsPage() {
     try {
       setIsLoading(true);
       const response = await leadService.getAll();
-      setLeads(response.leads || []);
+      const list = response.leads || [];
+      setLeads(DEMO_FALLBACK && list.length === 0 ? demoLeads : list);
     } catch (error) {
       console.error('Erro ao carregar leads:', error);
-      setLeads([]);
+      setLeads(DEMO_FALLBACK ? demoLeads : []);
     } finally {
       setIsLoading(false);
     }

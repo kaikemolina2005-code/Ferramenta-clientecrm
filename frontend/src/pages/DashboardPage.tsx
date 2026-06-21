@@ -15,6 +15,7 @@ import type { ApexOptions } from 'apexcharts';
 import Card from '@/components/horizon/Card';
 import MiniStatistics from '@/components/horizon/MiniStatistics';
 import api from '@/services/api';
+import { DEMO_FALLBACK, demoDashboard } from '@/utils/demoData';
 
 const AD_SPEND_STORAGE_KEY = 'dashboard_ad_spend';
 
@@ -55,10 +56,24 @@ export function DashboardPage() {
         api.get('/reports/time-series?days=30').catch(() => ({ data: { data: [] } })),
       ]);
 
-      setOverview(overviewRes.data.data);
-      setLeadAnalytics(leadAnalyticsRes.data.data);
-      setConversionMetrics(conversionRes.data.data);
-      setTimeSeries(timeSeriesRes.data.data || []);
+      const ov = overviewRes.data.data;
+      const la = leadAnalyticsRes.data.data;
+      const cm = conversionRes.data.data;
+      const ts = timeSeriesRes.data.data || [];
+
+      // Sem dados reais ainda? Usa demonstracao para visualizar o layout.
+      const empty = !ov?.summary?.totalLeads;
+      if (DEMO_FALLBACK && empty) {
+        setOverview(demoDashboard.overview);
+        setLeadAnalytics(demoDashboard.leadAnalytics);
+        setConversionMetrics(demoDashboard.conversionMetrics);
+        setTimeSeries(demoDashboard.timeSeries);
+      } else {
+        setOverview(ov);
+        setLeadAnalytics(la);
+        setConversionMetrics(cm);
+        setTimeSeries(ts);
+      }
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
     } finally {
