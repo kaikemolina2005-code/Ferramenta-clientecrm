@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Box, useDisclosure, useColorModeValue } from '@chakra-ui/react';
 import { NotificationsContainer } from './NotificationsContainer';
 import useSocket, { type SocketNotification } from '@/hooks/useSocket';
-import { Sidebar, SidebarMobile, SIDEBAR_WIDTH } from './horizon/Sidebar';
+import { Sidebar, SidebarMobile, SIDEBAR_COLLAPSED } from './horizon/Sidebar';
 import { Navbar } from './horizon/Navbar';
 import { Footer } from './horizon/Footer';
 import FixedPlugin from './horizon/FixedPlugin';
@@ -68,7 +68,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <SidebarMobile isOpen={isOpen} onClose={onClose} />
 
       {/* Area principal deslocada pela largura da sidebar no desktop */}
-      <Box ml={{ base: 0, xl: `${SIDEBAR_WIDTH}px` }} display="flex" flexDirection="column" minH="100vh">
+      <Box ml={{ base: 0, xl: `${SIDEBAR_COLLAPSED}px` }} display="flex" flexDirection="column" minH="100vh">
         <Navbar onOpenSidebar={onOpen} />
         <Box as="main" flex="1" px={{ base: '16px', md: '24px' }} py="20px">
           {children}

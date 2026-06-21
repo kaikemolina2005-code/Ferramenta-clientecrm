@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Box,
   Flex,
@@ -7,6 +8,7 @@ import {
   Icon,
   Avatar,
   IconButton,
+  Tooltip,
   Drawer,
   DrawerBody,
   DrawerContent,
@@ -30,6 +32,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 
 export const SIDEBAR_WIDTH = 290;
+export const SIDEBAR_COLLAPSED = 84;
 
 const NAV_ITEMS = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -44,7 +47,7 @@ const NAV_ITEMS = [
   { to: '/perfil', icon: User, label: 'Perfil' },
 ];
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarContent({ onNavigate, collapsed = false }: { onNavigate?: () => void; collapsed?: boolean }) {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
 
@@ -62,12 +65,21 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <Flex direction="column" height="100%" pt="20px" px="16px" pb="16px">
       {/* Logo / marca */}
-      <HStack spacing="12px" px="8px" pb="20px" mb="12px" borderBottomWidth="1px" borderColor={borderCol}>
+      <HStack
+        spacing="12px"
+        px="8px"
+        pb="20px"
+        mb="12px"
+        borderBottomWidth="1px"
+        borderColor={borderCol}
+        justify={collapsed ? 'center' : 'flex-start'}
+      >
         <Flex
           align="center"
           justify="center"
           w="40px"
           h="40px"
+          flexShrink={0}
           borderRadius="12px"
           bgGradient="linear(135deg, brand.600, brand.500)"
           color="white"
@@ -76,73 +88,96 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         >
           AD
         </Flex>
-        <Box>
-          <Text fontSize="md" fontWeight="bold" color={brandText} lineHeight="1.1">
-            ADVGD CRM
-          </Text>
-          <Text fontSize="xs" color="gold.600" lineHeight="1.1">
-            Diego Patrício
-          </Text>
-        </Box>
+        {!collapsed && (
+          <Box overflow="hidden" whiteSpace="nowrap">
+            <Text fontSize="md" fontWeight="bold" color={brandText} lineHeight="1.1">
+              ADVGD CRM
+            </Text>
+            <Text fontSize="xs" color="gold.600" lineHeight="1.1">
+              Diego Patrício
+            </Text>
+          </Box>
+        )}
       </HStack>
 
       {/* Navegacao */}
-      <Stack spacing="2px" flex="1" overflowY="auto">
+      <Stack spacing="2px" flex="1" overflowY="auto" overflowX="hidden">
         {NAV_ITEMS.map(({ to, icon: ItemIcon, label }) => {
           const active = pathname === to || pathname.startsWith(to + '/');
           return (
-            <HStack
-              as={Link}
-              to={to}
-              key={to}
-              onClick={onNavigate}
-              spacing="14px"
-              px="14px"
-              py="11px"
-              borderRadius="14px"
-              bg={active ? activeBg : 'transparent'}
-              color={active ? activeColor : inactiveColor}
-              fontWeight={active ? '700' : '500'}
-              transition="all 0.15s"
-              _hover={{ bg: activeBg }}
-              position="relative"
-            >
-              {active && (
-                <Box position="absolute" left="0" h="60%" w="4px" borderRadius="full" bg="gold.500" />
-              )}
-              <Icon as={ItemIcon} boxSize="20px" color={active ? activeColor : 'inherit'} />
-              <Text fontSize="sm">{label}</Text>
-            </HStack>
+            <Tooltip key={to} label={label} placement="right" isDisabled={!collapsed} hasArrow>
+              <HStack
+                as={Link}
+                to={to}
+                onClick={onNavigate}
+                spacing="14px"
+                px="14px"
+                py="11px"
+                borderRadius="14px"
+                bg={active ? activeBg : 'transparent'}
+                color={active ? activeColor : inactiveColor}
+                fontWeight={active ? '700' : '500'}
+                transition="all 0.15s"
+                _hover={{ bg: activeBg }}
+                position="relative"
+                justify={collapsed ? 'center' : 'flex-start'}
+              >
+                {active && (
+                  <Box position="absolute" left="0" h="60%" w="4px" borderRadius="full" bg="gold.500" />
+                )}
+                <Icon as={ItemIcon} boxSize="20px" flexShrink={0} color={active ? activeColor : 'inherit'} />
+                {!collapsed && (
+                  <Text fontSize="sm" whiteSpace="nowrap" overflow="hidden">
+                    {label}
+                  </Text>
+                )}
+              </HStack>
+            </Tooltip>
           );
         })}
       </Stack>
 
       {/* Usuario */}
-      <HStack mt="12px" pt="14px" borderTopWidth="1px" borderColor={borderCol} spacing="12px">
-        <Avatar size="sm" name={user?.name} bg="gold.500" color="brand.600" />
-        <Box flex="1" minW="0">
-          <Text fontSize="sm" fontWeight="600" color={brandText} noOfLines={1}>
-            {user?.name}
-          </Text>
-          <Text fontSize="xs" color="secondaryGray.700" noOfLines={1}>
-            {user?.role}
-          </Text>
-        </Box>
-        <IconButton
-          aria-label="Sair"
-          icon={<Icon as={LogOut} boxSize="18px" />}
-          variant="ghost"
-          colorScheme="red"
-          size="sm"
-          onClick={handleLogout}
-        />
+      <HStack
+        mt="12px"
+        pt="14px"
+        borderTopWidth="1px"
+        borderColor={borderCol}
+        spacing="12px"
+        justify={collapsed ? 'center' : 'flex-start'}
+      >
+        <Avatar size="sm" name={user?.name} bg="gold.500" color="brand.600" flexShrink={0} />
+        {!collapsed && (
+          <>
+            <Box flex="1" minW="0">
+              <Text fontSize="sm" fontWeight="600" color={brandText} noOfLines={1}>
+                {user?.name}
+              </Text>
+              <Text fontSize="xs" color="secondaryGray.700" noOfLines={1}>
+                {user?.role}
+              </Text>
+            </Box>
+            <IconButton
+              aria-label="Sair"
+              icon={<Icon as={LogOut} boxSize="18px" />}
+              variant="ghost"
+              colorScheme="red"
+              size="sm"
+              onClick={handleLogout}
+            />
+          </>
+        )}
       </HStack>
     </Flex>
   );
 }
 
-/** Sidebar fixa para desktop. */
+/**
+ * Sidebar fixa para desktop com efeito recolher/expandir no hover:
+ * recolhida mostra so os icones; ao passar o mouse expande mostrando os textos.
+ */
 export function Sidebar() {
+  const [expanded, setExpanded] = useState(false);
   const bg = useColorModeValue('white', 'navy.800');
   return (
     <Box
@@ -151,12 +186,16 @@ export function Sidebar() {
       top="0"
       left="0"
       h="100vh"
-      w={`${SIDEBAR_WIDTH}px`}
+      w={`${expanded ? SIDEBAR_WIDTH : SIDEBAR_COLLAPSED}px`}
       bg={bg}
       boxShadow="14px 17px 40px 4px rgba(112, 144, 176, 0.08)"
       zIndex="20"
+      overflow="hidden"
+      transition="width 0.2s ease"
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
     >
-      <SidebarContent />
+      <SidebarContent collapsed={!expanded} />
     </Box>
   );
 }
