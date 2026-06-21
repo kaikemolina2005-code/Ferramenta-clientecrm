@@ -168,7 +168,7 @@ export default function ReportsPage() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: designSystem.colors.neutral.light, padding: '32px' }}>
+    <div>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ marginBottom: '32px' }}>
           <h1 style={{

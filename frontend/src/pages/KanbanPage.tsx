@@ -283,7 +283,7 @@ export function KanbanPage() {
   const sectorCards = cards[activeSector] || [];
 
   return (
-    <div style={{ padding: '32px', backgroundColor: designSystem.colors.neutral.light, minHeight: '100vh' }}>
+    <div>
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',

@@ -101,11 +101,7 @@ export const WhatsAppPage: React.FC = () => {
   };
 
   return (
-    <div style={{ 
-      padding: '32px',
-      backgroundColor: designSystem.colors.neutral.light,
-      minHeight: '100vh'
-    }}>
+    <div>
       {/* Header */}
       <div style={{
         display: 'flex',

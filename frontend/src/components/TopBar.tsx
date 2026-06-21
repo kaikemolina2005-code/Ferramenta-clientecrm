@@ -133,11 +133,12 @@ export const Card: React.FC<{
 }> = ({ children, title, subtitle, icon, className = '', hoverable = false, style = {} }) => {
   return (
     <div
-      className={`rounded-lg p-6 ${hoverable ? 'cursor-pointer transition-all' : ''} ${className}`}
+      className={`p-6 ${hoverable ? 'cursor-pointer transition-all' : ''} ${className}`}
       style={{
         backgroundColor: designSystem.colors.neutral.white,
-        border: `1px solid ${designSystem.colors.neutral.gray200}`,
-        boxShadow: designSystem.shadows.md,
+        borderRadius: '20px',
+        border: 'none',
+        boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.12)',
         ...(hoverable && {
           transform: 'translateY(0)',
           transition: 'all 0.3s ease',
@@ -147,13 +148,13 @@ export const Card: React.FC<{
       onMouseEnter={(e) => {
         if (hoverable) {
           (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
-          (e.currentTarget as HTMLElement).style.boxShadow = designSystem.shadows.lg;
+          (e.currentTarget as HTMLElement).style.boxShadow = '0px 24px 50px rgba(112, 144, 176, 0.2)';
         }
       }}
       onMouseLeave={(e) => {
         if (hoverable) {
           (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-          (e.currentTarget as HTMLElement).style.boxShadow = designSystem.shadows.md;
+          (e.currentTarget as HTMLElement).style.boxShadow = '0px 18px 40px rgba(112, 144, 176, 0.12)';
         }
       }}
     >
