@@ -96,48 +96,73 @@ export function DashboardPage() {
     { label: 'CPC (Custo por Contato)', value: cpc !== null ? `R$ ${cpc.toFixed(2)}` : '—', icon: '💰' },
   ];
 
-  // ---- Configuracao dos graficos (ApexCharts) ----
+  // ---- Configuracao dos graficos (estilo Horizon UI) ----
+  // Linha suave com sombra projetada, sem grade nem eixo Y (igual TotalSpent do Horizon)
   const lineOptions: ApexOptions = {
-    chart: { toolbar: { show: false }, fontFamily: 'Segoe UI, sans-serif' },
+    chart: {
+      toolbar: { show: false },
+      fontFamily: 'Segoe UI, sans-serif',
+      dropShadow: { enabled: true, top: 13, left: 0, blur: 10, opacity: 0.1, color: BRAND_DARK },
+    },
     colors: [BRAND_DARK, GOLD],
     stroke: { curve: 'smooth', width: 3 },
     markers: { size: 0 },
+    tooltip: { theme: 'dark' },
+    dataLabels: { enabled: false },
     xaxis: {
       categories: timeSeries.map((d) => d.date),
-      labels: { style: { colors: '#8f9bba' } },
+      labels: { style: { colors: '#A3AED0', fontSize: '12px', fontWeight: '500' } },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
     },
-    yaxis: { labels: { style: { colors: '#8f9bba' } } },
-    grid: { borderColor: '#e0e5f2' },
+    yaxis: { show: false },
     legend: { show: true, position: 'top' },
-    tooltip: { theme: 'light' },
-    dataLabels: { enabled: false },
+    grid: { show: false },
   };
   const lineSeries = [
     { name: 'Leads', data: timeSeries.map((d) => d.leadsCreated ?? 0) },
     { name: 'Conversões', data: timeSeries.map((d) => d.converted ?? 0) },
   ];
 
+  // Donut moderno (igual Your Pie Chart do Horizon)
   const pieOptions: ApexOptions = {
     labels: originData.map((d: any) => d.name),
     colors: PIE_COLORS,
-    legend: { position: 'bottom' },
+    fill: { colors: PIE_COLORS },
+    legend: { show: true, position: 'bottom' },
     chart: { fontFamily: 'Segoe UI, sans-serif' },
-    dataLabels: { enabled: true },
+    dataLabels: { enabled: false },
+    states: { hover: { filter: { type: 'none' } } },
+    plotOptions: { pie: { donut: { size: '70%' } } },
+    tooltip: { enabled: true, theme: 'dark' },
   };
   const pieSeries = originData.map((d: any) => d.value);
 
+  // Barras arredondadas com gradiente vertical (igual Daily Traffic do Horizon)
   const barOptions: ApexOptions = {
     chart: { toolbar: { show: false }, fontFamily: 'Segoe UI, sans-serif' },
     colors: [BRAND_DARK, GOLD],
-    plotOptions: { bar: { borderRadius: 8, columnWidth: '40%' } },
+    tooltip: { theme: 'dark' },
+    dataLabels: { enabled: false },
+    plotOptions: { bar: { borderRadius: 10, columnWidth: '30px' } },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        type: 'vertical',
+        shadeIntensity: 1,
+        opacityFrom: 1,
+        opacityTo: 0.4,
+      },
+    },
     xaxis: {
       categories: topPerformers.map((p: any) => p.userName),
-      labels: { style: { colors: '#8f9bba' } },
+      labels: { style: { colors: '#A3AED0', fontSize: '14px', fontWeight: '500' } },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
     },
-    yaxis: { labels: { style: { colors: '#8f9bba' } } },
-    grid: { borderColor: '#e0e5f2' },
+    yaxis: { labels: { style: { colors: '#A3AED0' } } },
+    grid: { borderColor: 'rgba(163, 174, 208, 0.3)', strokeDashArray: 5 },
     legend: { show: true, position: 'top' },
-    dataLabels: { enabled: false },
   };
   const barSeries = [
     { name: 'Convertidos', data: topPerformers.map((p: any) => p.converted ?? 0) },
@@ -213,7 +238,7 @@ export function DashboardPage() {
             </Center>
           ) : (
             <Box h="320px">
-              <ReactApexChart options={pieOptions} series={pieSeries} type="pie" height="100%" width="100%" />
+              <ReactApexChart options={pieOptions} series={pieSeries} type="donut" height="100%" width="100%" />
             </Box>
           )}
         </Card>
