@@ -1,19 +1,27 @@
-import { Box, useStyleConfig, type BoxProps } from '@chakra-ui/react';
+import { Box, useColorModeValue, type BoxProps } from '@chakra-ui/react';
 
 /**
- * Card base no estilo Horizon UI: cantos arredondados, fundo branco,
- * sombra suave. Usado como container padrao de widgets/paineis.
+ * Card base no estilo Horizon UI: cantos arredondados 20px, fundo branco
+ * (navy.800 no dark mode), sombra suave. Container padrao de widgets/paineis.
  */
-export default function Card(props: BoxProps & { variant?: string }) {
-  const { variant, children, ...rest } = props;
-  const styles = useStyleConfig('Card', { variant });
+export default function Card(props: BoxProps) {
+  const { children, ...rest } = props;
+  const bg = useColorModeValue('white', 'navy.800');
+  const shadow = useColorModeValue(
+    '0px 18px 40px rgba(112, 144, 176, 0.12)',
+    'none',
+  );
   return (
     <Box
-      __css={styles}
-      bg="white"
+      bg={bg}
       borderRadius="20px"
       p="20px"
-      boxShadow="0px 18px 40px rgba(112, 144, 176, 0.12)"
+      boxShadow={shadow}
+      position="relative"
+      display="flex"
+      flexDirection="column"
+      minW="0"
+      wordBreak="break-word"
       {...rest}
     >
       {children}

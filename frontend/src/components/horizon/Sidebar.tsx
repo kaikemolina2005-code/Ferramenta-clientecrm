@@ -46,9 +46,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
 
-  const activeColor = useColorModeValue('brand.600', 'white');
+  const activeColor = useColorModeValue('navy.700', 'white');
   const inactiveColor = useColorModeValue('secondaryGray.700', 'secondaryGray.600');
   const activeBg = useColorModeValue('secondaryGray.300', 'whiteAlpha.100');
+  const brandText = useColorModeValue('navy.700', 'white');
+  const borderCol = useColorModeValue('secondaryGray.200', 'whiteAlpha.200');
 
   const handleLogout = async () => {
     await logout();
@@ -58,7 +60,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <Flex direction="column" height="100%" pt="20px" px="16px" pb="16px">
       {/* Logo / marca */}
-      <HStack spacing="12px" px="8px" pb="20px" mb="12px" borderBottomWidth="1px" borderColor="secondaryGray.200">
+      <HStack spacing="12px" px="8px" pb="20px" mb="12px" borderBottomWidth="1px" borderColor={borderCol}>
         <Flex
           align="center"
           justify="center"
@@ -73,7 +75,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           AD
         </Flex>
         <Box>
-          <Text fontSize="md" fontWeight="bold" color="navy.700" lineHeight="1.1">
+          <Text fontSize="md" fontWeight="bold" color={brandText} lineHeight="1.1">
             ADVGD CRM
           </Text>
           <Text fontSize="xs" color="gold.600" lineHeight="1.1">
@@ -106,7 +108,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               {active && (
                 <Box position="absolute" left="0" h="60%" w="4px" borderRadius="full" bg="gold.500" />
               )}
-              <Icon as={ItemIcon} boxSize="20px" color={active ? 'brand.600' : 'inherit'} />
+              <Icon as={ItemIcon} boxSize="20px" color={active ? activeColor : 'inherit'} />
               <Text fontSize="sm">{label}</Text>
             </HStack>
           );
@@ -114,10 +116,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </Stack>
 
       {/* Usuario */}
-      <HStack mt="12px" pt="14px" borderTopWidth="1px" borderColor="secondaryGray.200" spacing="12px">
+      <HStack mt="12px" pt="14px" borderTopWidth="1px" borderColor={borderCol} spacing="12px">
         <Avatar size="sm" name={user?.name} bg="gold.500" color="brand.600" />
         <Box flex="1" minW="0">
-          <Text fontSize="sm" fontWeight="600" color="navy.700" noOfLines={1}>
+          <Text fontSize="sm" fontWeight="600" color={brandText} noOfLines={1}>
             {user?.name}
           </Text>
           <Text fontSize="xs" color="secondaryGray.700" noOfLines={1}>
@@ -139,6 +141,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 /** Sidebar fixa para desktop. */
 export function Sidebar() {
+  const bg = useColorModeValue('white', 'navy.800');
   return (
     <Box
       display={{ base: 'none', xl: 'block' }}
@@ -147,7 +150,7 @@ export function Sidebar() {
       left="0"
       h="100vh"
       w={`${SIDEBAR_WIDTH}px`}
-      bg="white"
+      bg={bg}
       boxShadow="14px 17px 40px 4px rgba(112, 144, 176, 0.08)"
       zIndex="20"
     >
@@ -158,10 +161,11 @@ export function Sidebar() {
 
 /** Sidebar em Drawer para mobile/tablet. */
 export function SidebarMobile({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const bg = useColorModeValue('white', 'navy.800');
   return (
     <Drawer isOpen={isOpen} onClose={onClose} placement="left">
       <DrawerOverlay />
-      <DrawerContent w="285px" maxW="285px" bg="white">
+      <DrawerContent w="285px" maxW="285px" bg={bg}>
         <DrawerBody p="0">
           <SidebarContent onNavigate={onClose} />
         </DrawerBody>

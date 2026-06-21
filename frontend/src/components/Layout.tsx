@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, useDisclosure } from '@chakra-ui/react';
+import { Box, useDisclosure, useColorModeValue } from '@chakra-ui/react';
 import { NotificationsContainer } from './NotificationsContainer';
 import useSocket, { type SocketNotification } from '@/hooks/useSocket';
 import { Sidebar, SidebarMobile, SIDEBAR_WIDTH } from './horizon/Sidebar';
@@ -9,6 +9,7 @@ import { Footer } from './horizon/Footer';
 export function Layout({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<SocketNotification[]>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const bg = useColorModeValue('secondaryGray.300', 'navy.900');
   const { onNotification, onDocumentAnalyzed, onDocumentProcessingCompleted, onDocumentProcessingError } = useSocket();
 
   useEffect(() => {
@@ -60,7 +61,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <Box minH="100vh" bg="secondaryGray.300">
+    <Box minH="100vh" bg={bg}>
       {/* Sidebar fixa (desktop) + Drawer (mobile) */}
       <Sidebar />
       <SidebarMobile isOpen={isOpen} onClose={onClose} />

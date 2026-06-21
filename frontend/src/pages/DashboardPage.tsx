@@ -8,6 +8,7 @@ import {
   FormLabel,
   Spinner,
   Center,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
@@ -37,6 +38,8 @@ export function DashboardPage() {
   const [conversionMetrics, setConversionMetrics] = useState<any>(null);
   const [timeSeries, setTimeSeries] = useState<any[]>([]);
   const [adSpend, setAdSpend] = useState<string>(() => localStorage.getItem(AD_SPEND_STORAGE_KEY) || '');
+
+  const titleColor = useColorModeValue('navy.700', 'white');
 
   useEffect(() => {
     loadDashboard();
@@ -165,7 +168,7 @@ export function DashboardPage() {
 
       {/* Configurar CPC */}
       <Card mb="20px">
-        <Text fontSize="lg" fontWeight="700" color="navy.700" mb="12px">
+        <Text fontSize="lg" fontWeight="700" color={titleColor} mb="12px">
           💰 Configurar CPC
         </Text>
         <Flex align="center" gap="12px" flexWrap="wrap">
@@ -190,7 +193,7 @@ export function DashboardPage() {
 
       {/* Grafico de linha (largura total) */}
       <Card mb="20px">
-        <Text fontSize="lg" fontWeight="700" color="navy.700" mb="12px">
+        <Text fontSize="lg" fontWeight="700" color={titleColor} mb="12px">
           📈 Leads x Conversões (30 dias)
         </Text>
         <Box h="320px">
@@ -201,7 +204,7 @@ export function DashboardPage() {
       {/* Pizza + Barras */}
       <SimpleGrid columns={{ base: 1, lg: 2 }} gap="20px">
         <Card>
-          <Text fontSize="lg" fontWeight="700" color="navy.700" mb="12px">
+          <Text fontSize="lg" fontWeight="700" color={titleColor} mb="12px">
             🌍 Origem dos Leads
           </Text>
           {originData.length === 0 ? (
@@ -216,7 +219,7 @@ export function DashboardPage() {
         </Card>
 
         <Card>
-          <Text fontSize="lg" fontWeight="700" color="navy.700" mb="12px">
+          <Text fontSize="lg" fontWeight="700" color={titleColor} mb="12px">
             🏆 Conversão por Responsável
           </Text>
           {topPerformers.length === 0 ? (

@@ -43,6 +43,7 @@ export const chakraTheme = extendTheme({
       800: '#684f25',
       900: '#49381a',
     },
+    // Escala navy exata do Horizon (usada pelo dark mode)
     navy: {
       50: '#d0dcfb',
       100: '#aac0fe',
@@ -51,7 +52,7 @@ export const chakraTheme = extendTheme({
       400: '#3652ba',
       500: '#1b3bbb',
       600: '#24388a',
-      700: '#1b254b',
+      700: '#1B254B',
       800: '#111c44',
       900: '#0b1437',
     },
@@ -71,11 +72,16 @@ export const chakraTheme = extendTheme({
     heading: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
     body: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
   },
+  shadows: {
+    card: '14px 17px 40px 4px rgba(112, 144, 176, 0.18)',
+    cardDark: '14px 17px 40px 4px rgba(112, 144, 176, 0.06)',
+    cardSoft: '0px 18px 40px rgba(112, 144, 176, 0.12)',
+  },
   styles: {
-    global: () => ({
+    global: (props: { colorMode: 'light' | 'dark' }) => ({
       body: {
-        bg: 'secondaryGray.300',
-        color: 'navy.700',
+        bg: props.colorMode === 'dark' ? 'navy.900' : 'secondaryGray.300',
+        color: props.colorMode === 'dark' ? 'white' : 'navy.700',
         fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
       },
       '*::placeholder': {
