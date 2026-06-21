@@ -28,6 +28,7 @@ const PAGE_NAMES: Record<string, string> = {
   '/documentos': 'Documentos',
   '/whatsapp': 'WhatsApp',
   '/ai': 'IA Documents',
+  '/perfil': 'Perfil',
 };
 
 export function Navbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {

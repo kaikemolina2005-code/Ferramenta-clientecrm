@@ -5,6 +5,7 @@ import useSocket, { type SocketNotification } from '@/hooks/useSocket';
 import { Sidebar, SidebarMobile, SIDEBAR_WIDTH } from './horizon/Sidebar';
 import { Navbar } from './horizon/Navbar';
 import { Footer } from './horizon/Footer';
+import FixedPlugin from './horizon/FixedPlugin';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<SocketNotification[]>([]);
@@ -76,6 +77,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </Box>
 
       <NotificationsContainer notifications={notifications} onRemove={removeNotification} />
+      <FixedPlugin />
     </Box>
   );
 }

@@ -25,6 +25,7 @@ import {
   MessageSquare,
   Brain,
   LogOut,
+  User,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -40,6 +41,7 @@ const NAV_ITEMS = [
   { to: '/documentos', icon: FileText, label: 'Documentos' },
   { to: '/whatsapp', icon: MessageSquare, label: 'WhatsApp' },
   { to: '/ai', icon: Brain, label: 'IA Documents' },
+  { to: '/perfil', icon: User, label: 'Perfil' },
 ];
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {

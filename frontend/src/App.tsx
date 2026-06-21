@@ -11,6 +11,7 @@ import { AIPage } from '@/pages/AIPage'
 import { TasksPage } from '@/pages/TasksPage'
 import AutomationDashboard from '@/pages/AutomationDashboard'
 import ReportsPage from '@/pages/ReportsPage'
+import { ProfilePage } from '@/pages/ProfilePage'
 
 function App() {
   return (
@@ -88,6 +89,14 @@ function App() {
             element={
               <Layout>
                 <TasksPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/perfil"
+            element={
+              <Layout>
+                <ProfilePage />
               </Layout>
             }
           />
