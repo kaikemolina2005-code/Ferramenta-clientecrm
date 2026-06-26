@@ -17,6 +17,9 @@ router.get('/stats', leadsController.getLeadStatistics);
 // GET /leads/search/:query - Search leads
 router.get('/search/:query', leadsController.searchLeads);
 
+// GET /leads/deletion-logs - Histórico de exclusões (quem apagou e por quê)
+router.get('/deletion-logs', leadsController.getDeletionLogs);
+
 // POST /leads - Create new lead
 router.post('/', leadsController.createLead);
 

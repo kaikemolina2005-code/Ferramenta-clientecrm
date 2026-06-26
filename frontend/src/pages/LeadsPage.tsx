@@ -8,6 +8,10 @@ export function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -68,6 +72,34 @@ export function LeadsPage() {
       setLeads(leads.map((lead) => (lead.id === leadId ? updated : lead)));
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
+    }
+  };
+
+  const openDeleteModal = (lead: Lead) => {
+    setDeleteTarget(lead);
+    setDeleteReason('');
+    setDeleteError('');
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    const reason = deleteReason.trim();
+    if (!reason) {
+      setDeleteError('Informe o motivo da exclusão.');
+      return;
+    }
+    try {
+      setDeleting(true);
+      await leadService.delete(deleteTarget.id, reason);
+      setLeads(leads.filter((l) => l.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      setDeleteReason('');
+    } catch (error: any) {
+      setDeleteError(
+        error?.response?.data?.error || 'Erro ao excluir o lead. Tente novamente.'
+      );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -399,25 +431,44 @@ export function LeadsPage() {
                       <Badge variant={getStatusColor(lead.status) as any}>{lead.status}</Badge>
                     </td>
                     <td style={{ padding: '16px' }}>
-                      <select
-                        value={lead.status}
-                        onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                        style={{
-                          padding: '6px 12px',
-                          border: `1px solid ${designSystem.colors.neutral.gray300}`,
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          color: designSystem.colors.primary.dark,
-                          backgroundColor: designSystem.colors.neutral.white,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <option value="INITIAL">Inicial</option>
-                        <option value="CONSULTING">Consultando</option>
-                        <option value="PAYMENT">Pagamento</option>
-                        <option value="LOSS">Perda</option>
-                        <option value="CONVERTED">Convertido</option>
-                      </select>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <select
+                          value={lead.status}
+                          onChange={(e) => handleStatusChange(lead.id, e.target.value)}
+                          style={{
+                            padding: '6px 12px',
+                            border: `1px solid ${designSystem.colors.neutral.gray300}`,
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            color: designSystem.colors.primary.dark,
+                            backgroundColor: designSystem.colors.neutral.white,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <option value="INITIAL">Inicial</option>
+                          <option value="CONSULTING">Consultando</option>
+                          <option value="PAYMENT">Pagamento</option>
+                          <option value="LOSS">Perda</option>
+                          <option value="CONVERTED">Convertido</option>
+                        </select>
+                        <button
+                          type="button"
+                          title="Excluir lead"
+                          onClick={() => openDeleteModal(lead)}
+                          style={{
+                            padding: '6px 10px',
+                            border: `1px solid ${designSystem.colors.status.error}`,
+                            borderRadius: '6px',
+                            backgroundColor: designSystem.colors.neutral.white,
+                            color: designSystem.colors.status.error,
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            lineHeight: 1
+                          }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -426,6 +477,91 @@ export function LeadsPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de exclusão com motivo obrigatório */}
+      {deleteTarget && (
+        <div
+          onClick={() => !deleting && setDeleteTarget(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: designSystem.colors.neutral.white,
+              borderRadius: '12px',
+              padding: '24px',
+              width: '420px',
+              maxWidth: '90%',
+              boxShadow: designSystem.shadows.lg,
+            }}
+          >
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: designSystem.colors.status.error, marginBottom: '8px' }}>
+              🗑️ Excluir lead
+            </h2>
+            <p style={{ fontSize: '14px', color: designSystem.colors.neutral.gray600, marginBottom: '16px' }}>
+              Você está prestes a excluir <strong>{deleteTarget.name}</strong>. Essa ação não pode ser desfeita e ficará registrada no histórico (quem excluiu e o motivo).
+            </p>
+
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: designSystem.colors.primary.dark, marginBottom: '8px' }}>
+              Motivo da exclusão *
+            </label>
+            <textarea
+              value={deleteReason}
+              onChange={(e) => { setDeleteReason(e.target.value); setDeleteError(''); }}
+              placeholder="Ex: Lead duplicado, cadastrado por engano..."
+              rows={3}
+              autoFocus
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: `1px solid ${designSystem.colors.neutral.gray300}`,
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontFamily: 'Segoe UI, sans-serif',
+                resize: 'vertical',
+                boxSizing: 'border-box',
+              }}
+            />
+
+            {deleteError && (
+              <p style={{ color: designSystem.colors.status.error, fontSize: '13px', marginTop: '8px' }}>
+                {deleteError}
+              </p>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+              <Button variant="secondary" onClick={() => setDeleteTarget(null)} disabled={deleting}>
+                Cancelar
+              </Button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: designSystem.colors.status.error,
+                  color: designSystem.colors.neutral.white,
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: deleting ? 'not-allowed' : 'pointer',
+                  fontWeight: 'bold',
+                  opacity: deleting ? 0.7 : 1,
+                }}
+              >
+                {deleting ? 'Excluindo...' : 'Confirmar exclusão'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -25,8 +25,13 @@ export const leadService = {
     return response.data.data;
   },
 
-  async delete(id: string): Promise<void> {
-    await api.delete(`/leads/${id}`);
+  async delete(id: string, reason: string): Promise<void> {
+    await api.delete(`/leads/${id}`, { data: { reason } });
+  },
+
+  async getDeletionLogs(): Promise<any[]> {
+    const response = await api.get('/leads/deletion-logs');
+    return response.data.data || [];
   },
 
   async search(query: string): Promise<Lead[]> {

@@ -231,8 +231,19 @@ export async function updateLeadStatus(req: AuthenticatedRequest, res: Response)
 export async function deleteLead(req: AuthenticatedRequest, res: Response) {
   try {
     const { id } = req.params;
+    const reason = (req.body?.reason || '').toString().trim();
 
-    const success = await leadService.deleteLead(id);
+    // Motivo é obrigatório (registrado no histórico para o ADM)
+    if (!reason) {
+      return res.status(400).json({
+        error: 'É obrigatório informar o motivo da exclusão',
+      });
+    }
+
+    const success = await leadService.deleteLead(id, {
+      userId: req.userId,
+      reason,
+    });
 
     if (!success) {
       return res.status(404).json({
@@ -248,6 +259,23 @@ export async function deleteLead(req: AuthenticatedRequest, res: Response) {
     console.error('Delete lead error:', error);
     res.status(500).json({
       error: error.message || 'Erro ao deletar lead',
+    });
+  }
+}
+
+/**
+ * GET /leads/deletion-logs
+ * Histórico de exclusões de leads (quem apagou, quando e por quê)
+ */
+export async function getDeletionLogs(req: AuthenticatedRequest, res: Response) {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+    const logs = await leadService.getDeletionLogs(limit);
+    res.json({ success: true, data: logs });
+  } catch (error: any) {
+    console.error('Deletion logs error:', error);
+    res.status(500).json({
+      error: error.message || 'Erro ao obter histórico de exclusões',
     });
   }
 }

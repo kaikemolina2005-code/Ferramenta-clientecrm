@@ -139,9 +139,40 @@ export class LeadService {
 
   /**
    * Deletar lead
+   *
+   * Antes de apagar, registra no histórico (tabela Activity) QUEM apagou,
+   * QUANDO e o MOTIVO. Como Activity.leadId usa onDelete: SetNull, esse
+   * registro continua existindo mesmo depois do lead ser removido, servindo
+   * de auditoria para o ADM.
    */
-  async deleteLead(id: string): Promise<boolean> {
+  async deleteLead(
+    id: string,
+    options?: { userId?: string; reason?: string }
+  ): Promise<boolean> {
     try {
+      // Buscar o lead para guardar um "retrato" dele no histórico
+      const lead = await prisma.lead.findUnique({ where: { id } });
+      if (!lead) return false;
+
+      // Registrar a exclusão no histórico (só se soubermos quem fez)
+      if (options?.userId) {
+        await prisma.activity.create({
+          data: {
+            userId: options.userId,
+            leadId: id,
+            action: 'deleted_lead',
+            details: JSON.stringify({
+              leadName: lead.name,
+              leadEmail: lead.email,
+              leadPhone: lead.phone,
+              leadCpf: lead.cpf,
+              reason: options.reason || '(sem motivo informado)',
+              deletedAt: new Date().toISOString(),
+            }),
+          },
+        });
+      }
+
       await prisma.lead.delete({
         where: { id },
       });
@@ -149,6 +180,38 @@ export class LeadService {
     } catch (error) {
       return false;
     }
+  }
+
+  /**
+   * Histórico de exclusões de leads (para o ADM revisar)
+   */
+  async getDeletionLogs(limit = 100) {
+    const logs = await prisma.activity.findMany({
+      where: { action: 'deleted_lead' },
+      include: { user: { select: { id: true, name: true, email: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    return logs.map((log) => {
+      let details: any = {};
+      try {
+        details = log.details ? JSON.parse(log.details) : {};
+      } catch {
+        details = {};
+      }
+      return {
+        id: log.id,
+        deletedBy: log.user
+          ? { name: log.user.name, email: log.user.email }
+          : null,
+        leadName: details.leadName || null,
+        leadEmail: details.leadEmail || null,
+        leadPhone: details.leadPhone || null,
+        reason: details.reason || null,
+        createdAt: log.createdAt,
+      };
+    });
   }
 
   /**
