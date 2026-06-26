@@ -1,14 +1,31 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import {
+  Flex,
+  Box,
+  Heading,
+  Text,
+  FormControl,
+  FormLabel,
+  Input,
+  InputGroup,
+  InputRightElement,
+  Button,
+  Checkbox,
+  Alert,
+  AlertIcon,
+  Icon,
+} from '@chakra-ui/react';
+import { Eye, EyeOff } from 'lucide-react';
 import { ADVGDLogoDiego } from '@/components/Logo';
-import { designSystem } from '@/theme/designSystem';
 
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('admin@advgd.com');
   const [password, setPassword] = useState('123456');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -28,182 +45,99 @@ export function LoginPage() {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{
-        background: 'linear-gradient(135deg, #003f7f 0%, #0d47a1 100%)',
-      }}
+    <Flex
+      minH="100vh"
+      align="center"
+      justify="center"
+      p="16px"
+      bgGradient="linear(135deg, #003f7f 0%, #0d47a1 100%)"
     >
-      <div className="w-full max-w-md">
-        {/* Card de Login */}
-        <div
-          className="rounded-xl p-8 shadow-xl"
-          style={{
-            backgroundColor: designSystem.colors.neutral.white,
-          }}
-        >
-          {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <ADVGDLogoDiego size="medium" />
-          </div>
+      <Box w="100%" maxW="420px" bg="white" borderRadius="20px" p="32px" boxShadow="2xl">
+        <Flex justify="center" mb="24px">
+          <ADVGDLogoDiego size="medium" />
+        </Flex>
 
-          {/* Título */}
-          <h1
-            className="text-3xl font-bold text-center mb-2"
-            style={{ color: designSystem.colors.primary.dark }}
-          >
-            Bem-vindo
-          </h1>
-          <p
-            className="text-center mb-8"
-            style={{ color: designSystem.colors.neutral.gray500 }}
-          >
-            Plataforma de Gestão para Escritórios de Advocacia
-          </p>
+        <Heading textAlign="center" fontSize="3xl" color="brand.600" mb="4px">
+          Bem-vindo
+        </Heading>
+        <Text textAlign="center" color="secondaryGray.700" mb="28px" fontSize="sm">
+          Plataforma de Gestão para Escritórios de Advocacia
+        </Text>
 
-          {/* Formulário */}
-          <form onSubmit={handleLogin} className="space-y-6">
-            {/* Email Input */}
-            <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: designSystem.colors.primary.dark }}
-              >
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border-2 transition-all"
-                style={{
-                  borderColor: designSystem.colors.neutral.gray300,
-                  backgroundColor: designSystem.colors.neutral.white,
-                }}
-                onFocus={(e) => {
-                  (e.target as HTMLInputElement).style.borderColor =
-                    designSystem.colors.primary.dark;
-                }}
-                onBlur={(e) => {
-                  (e.target as HTMLInputElement).style.borderColor =
-                    designSystem.colors.neutral.gray300;
-                }}
-                placeholder="seu@email.com"
-              />
-            </div>
+        <form onSubmit={handleLogin}>
+          <FormControl mb="16px" isRequired>
+            <FormLabel fontSize="sm" color="brand.600">
+              Email
+            </FormLabel>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="seu@email.com"
+              borderRadius="12px"
+            />
+          </FormControl>
 
-            {/* Password Input */}
-            <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: designSystem.colors.primary.dark }}
-              >
-                Senha
-              </label>
-              <input
-                type="password"
+          <FormControl mb="16px" isRequired>
+            <FormLabel fontSize="sm" color="brand.600">
+              Senha
+            </FormLabel>
+            <InputGroup>
+              <Input
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border-2 transition-all"
-                style={{
-                  borderColor: designSystem.colors.neutral.gray300,
-                  backgroundColor: designSystem.colors.neutral.white,
-                }}
-                onFocus={(e) => {
-                  (e.target as HTMLInputElement).style.borderColor =
-                    designSystem.colors.primary.dark;
-                }}
-                onBlur={(e) => {
-                  (e.target as HTMLInputElement).style.borderColor =
-                    designSystem.colors.neutral.gray300;
-                }}
                 placeholder="••••••••"
+                borderRadius="12px"
               />
-            </div>
+              <InputRightElement>
+                <Box cursor="pointer" onClick={() => setShowPassword(!showPassword)}>
+                  <Icon as={showPassword ? EyeOff : Eye} color="secondaryGray.600" boxSize="18px" />
+                </Box>
+              </InputRightElement>
+            </InputGroup>
+          </FormControl>
 
-            {/* Error Message */}
-            {error && (
-              <div
-                className="p-4 rounded-lg"
-                style={{
-                  backgroundColor: '#f8d7da',
-                  color: designSystem.colors.status.error,
-                  borderLeft: `4px solid ${designSystem.colors.status.error}`,
-                }}
-              >
-                {error}
-              </div>
-            )}
+          {error && (
+            <Alert status="error" borderRadius="12px" mb="16px" fontSize="sm">
+              <AlertIcon />
+              {error}
+            </Alert>
+          )}
 
-            {/* Remember Me */}
-            <div className="flex items-center">
-              <input type="checkbox" id="remember" className="w-4 h-4" />
-              <label
-                htmlFor="remember"
-                className="ml-2 text-sm"
-                style={{ color: designSystem.colors.neutral.gray500 }}
-              >
-                Lembrar-me
-              </label>
-            </div>
+          <Checkbox mb="20px" colorScheme="blue" defaultChecked={false}>
+            <Text fontSize="sm" color="secondaryGray.700">
+              Lembrar-me
+            </Text>
+          </Checkbox>
 
-            {/* Login Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-lg font-bold text-white transition-all"
-              style={{
-                backgroundColor: loading
-                  ? designSystem.colors.neutral.gray400
-                  : designSystem.colors.primary.dark,
-                cursor: loading ? 'not-allowed' : 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                if (!loading) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor =
-                    designSystem.colors.primary.main;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!loading) {
-                  (e.currentTarget as HTMLElement).style.backgroundColor =
-                    designSystem.colors.primary.dark;
-                }
-              }}
-            >
-              {loading ? 'Carregando...' : 'Entrar'}
-            </button>
-          </form>
-
-          {/* Demo Credentials */}
-          <div
-            className="mt-8 p-4 rounded-lg border-l-4"
-            style={{
-              backgroundColor: designSystem.colors.primary.lighter,
-              borderColor: designSystem.colors.accent.gold,
-            }}
+          <Button
+            type="submit"
+            isLoading={loading}
+            loadingText="Carregando..."
+            variant="brand"
+            w="100%"
+            py="22px"
           >
-            <p
-              className="text-xs font-semibold mb-2"
-              style={{ color: designSystem.colors.primary.dark }}
-            >
-              🔓 Credenciais de Demonstração:
-            </p>
-            <p className="text-xs" style={{ color: designSystem.colors.neutral.gray600 }}>
-              <strong>Email:</strong> admin@advgd.com<br />
-              <strong>Senha:</strong> 123456
-            </p>
-          </div>
+            Entrar
+          </Button>
+        </form>
 
-          {/* Footer */}
-          <p
-            className="text-center text-xs mt-8"
-            style={{ color: designSystem.colors.neutral.gray500 }}
-          >
-            © 2026 ADVGD CRM. Todos os direitos reservados.
-          </p>
-        </div>
-      </div>
-    </div>
+        <Box mt="24px" p="14px" borderRadius="12px" bg="brand.50" borderLeftWidth="4px" borderColor="gold.500">
+          <Text fontSize="xs" fontWeight="700" color="brand.600" mb="4px">
+            🔓 Credenciais de Demonstração:
+          </Text>
+          <Text fontSize="xs" color="secondaryGray.700">
+            <strong>Email:</strong> admin@advgd.com
+            <br />
+            <strong>Senha:</strong> 123456
+          </Text>
+        </Box>
+
+        <Text textAlign="center" fontSize="xs" color="secondaryGray.700" mt="20px">
+          © 2026 ADVGD CRM. Todos os direitos reservados.
+        </Text>
+      </Box>
+    </Flex>
   );
 }

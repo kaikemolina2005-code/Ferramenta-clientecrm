@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
+import { Box, useDisclosure, useColorModeValue } from '@chakra-ui/react';
 import { NotificationsContainer } from './NotificationsContainer';
 import useSocket, { type SocketNotification } from '@/hooks/useSocket';
-import { designSystem } from '@/theme/designSystem';
-import { CRMSidebar } from './ui/CRMSidebar';
+import { Sidebar, SidebarMobile, SIDEBAR_COLLAPSED } from './horizon/Sidebar';
+import { Navbar } from './horizon/Navbar';
+import { Footer } from './horizon/Footer';
+import FixedPlugin from './horizon/FixedPlugin';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<SocketNotification[]>([]);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const bg = useColorModeValue('secondaryGray.300', 'navy.900');
   const { onNotification, onDocumentAnalyzed, onDocumentProcessingCompleted, onDocumentProcessingError } = useSocket();
 
   useEffect(() => {
@@ -57,19 +62,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <>
-      <div className="flex h-screen" style={{ backgroundColor: designSystem.colors.neutral.light }}>
-        {/* Animated collapsible sidebar */}
-        <CRMSidebar />
+    <Box minH="100vh" bg={bg}>
+      {/* Sidebar fixa (desktop) + Drawer (mobile) */}
+      <Sidebar />
+      <SidebarMobile isOpen={isOpen} onClose={onClose} />
 
-        <main
-          className="flex-1 overflow-auto"
-          style={{ backgroundColor: designSystem.colors.neutral.light }}
-        >
-          <div className="p-4 md:p-8">{children}</div>
-        </main>
-      </div>
+      {/* Area principal deslocada pela largura da sidebar no desktop */}
+      <Box ml={{ base: 0, xl: `${SIDEBAR_COLLAPSED}px` }} display="flex" flexDirection="column" minH="100vh">
+        <Navbar onOpenSidebar={onOpen} />
+        <Box as="main" flex="1" px={{ base: '16px', md: '24px' }} py="20px">
+          {children}
+        </Box>
+        <Footer />
+      </Box>
+
       <NotificationsContainer notifications={notifications} onRemove={removeNotification} />
-    </>
+      <FixedPlugin />
+    </Box>
   );
 }

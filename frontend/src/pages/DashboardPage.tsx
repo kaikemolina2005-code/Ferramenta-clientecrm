@@ -1,8 +1,21 @@
 import { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { Card } from '@/components/TopBar';
-import { designSystem } from '@/theme/designSystem';
+import {
+  Box,
+  SimpleGrid,
+  Flex,
+  Text,
+  Input,
+  FormLabel,
+  Spinner,
+  Center,
+  useColorModeValue,
+} from '@chakra-ui/react';
+import ReactApexChart from 'react-apexcharts';
+import type { ApexOptions } from 'apexcharts';
+import Card from '@/components/horizon/Card';
+import MiniStatistics from '@/components/horizon/MiniStatistics';
 import api from '@/services/api';
+import { DEMO_FALLBACK, demoDashboard } from '@/utils/demoData';
 
 const AD_SPEND_STORAGE_KEY = 'dashboard_ad_spend';
 
@@ -13,13 +26,11 @@ const SOURCE_LABELS: Record<string, string> = {
   MANUAL: 'Manual',
 };
 
-const PIE_COLORS = [
-  designSystem.colors.primary.dark,
-  designSystem.colors.primary.light,
-  designSystem.colors.accent.gold,
-  designSystem.colors.status.success,
-  designSystem.colors.status.error,
-];
+// Paleta da marca (azul marinho + ouro + status)
+const BRAND_DARK = '#003f7f';
+const BRAND_LIGHT = '#1565c0';
+const GOLD = '#c9a961';
+const PIE_COLORS = [BRAND_DARK, BRAND_LIGHT, GOLD, '#27ae60', '#c0392b'];
 
 export function DashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -28,6 +39,8 @@ export function DashboardPage() {
   const [conversionMetrics, setConversionMetrics] = useState<any>(null);
   const [timeSeries, setTimeSeries] = useState<any[]>([]);
   const [adSpend, setAdSpend] = useState<string>(() => localStorage.getItem(AD_SPEND_STORAGE_KEY) || '');
+
+  const titleColor = useColorModeValue('navy.700', 'white');
 
   useEffect(() => {
     loadDashboard();
@@ -43,10 +56,24 @@ export function DashboardPage() {
         api.get('/reports/time-series?days=30').catch(() => ({ data: { data: [] } })),
       ]);
 
-      setOverview(overviewRes.data.data);
-      setLeadAnalytics(leadAnalyticsRes.data.data);
-      setConversionMetrics(conversionRes.data.data);
-      setTimeSeries(timeSeriesRes.data.data || []);
+      const ov = overviewRes.data.data;
+      const la = leadAnalyticsRes.data.data;
+      const cm = conversionRes.data.data;
+      const ts = timeSeriesRes.data.data || [];
+
+      // Sem dados reais ainda? Usa demonstracao para visualizar o layout.
+      const empty = !ov?.summary?.totalLeads;
+      if (DEMO_FALLBACK && empty) {
+        setOverview(demoDashboard.overview);
+        setLeadAnalytics(demoDashboard.leadAnalytics);
+        setConversionMetrics(demoDashboard.conversionMetrics);
+        setTimeSeries(demoDashboard.timeSeries);
+      } else {
+        setOverview(ov);
+        setLeadAnalytics(la);
+        setConversionMetrics(cm);
+        setTimeSeries(ts);
+      }
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
     } finally {
@@ -84,186 +111,168 @@ export function DashboardPage() {
     { label: 'CPC (Custo por Contato)', value: cpc !== null ? `R$ ${cpc.toFixed(2)}` : '—', icon: '💰' },
   ];
 
+  // ---- Configuracao dos graficos (estilo Horizon UI) ----
+  // Linha suave com sombra projetada, sem grade nem eixo Y (igual TotalSpent do Horizon)
+  const lineOptions: ApexOptions = {
+    chart: {
+      toolbar: { show: false },
+      fontFamily: 'Segoe UI, sans-serif',
+      dropShadow: { enabled: true, top: 13, left: 0, blur: 10, opacity: 0.1, color: BRAND_DARK },
+    },
+    colors: [BRAND_DARK, GOLD],
+    stroke: { curve: 'smooth', width: 3 },
+    markers: { size: 0 },
+    tooltip: { theme: 'dark' },
+    dataLabels: { enabled: false },
+    xaxis: {
+      categories: timeSeries.map((d) => d.date),
+      labels: { style: { colors: '#A3AED0', fontSize: '12px', fontWeight: '500' } },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+    },
+    yaxis: { show: false },
+    legend: { show: true, position: 'top' },
+    grid: { show: false },
+  };
+  const lineSeries = [
+    { name: 'Leads', data: timeSeries.map((d) => d.leadsCreated ?? 0) },
+    { name: 'Conversões', data: timeSeries.map((d) => d.converted ?? 0) },
+  ];
+
+  // Donut moderno (igual Your Pie Chart do Horizon)
+  const pieOptions: ApexOptions = {
+    labels: originData.map((d: any) => d.name),
+    colors: PIE_COLORS,
+    fill: { colors: PIE_COLORS },
+    legend: { show: true, position: 'bottom' },
+    chart: { fontFamily: 'Segoe UI, sans-serif' },
+    dataLabels: { enabled: false },
+    states: { hover: { filter: { type: 'none' } } },
+    plotOptions: { pie: { donut: { size: '70%' } } },
+    tooltip: { enabled: true, theme: 'dark' },
+  };
+  const pieSeries = originData.map((d: any) => d.value);
+
+  // Barras arredondadas com gradiente vertical (igual Daily Traffic do Horizon)
+  const barOptions: ApexOptions = {
+    chart: { toolbar: { show: false }, fontFamily: 'Segoe UI, sans-serif' },
+    colors: [BRAND_DARK, GOLD],
+    tooltip: { theme: 'dark' },
+    dataLabels: { enabled: false },
+    plotOptions: { bar: { borderRadius: 10, columnWidth: '30px' } },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        type: 'vertical',
+        shadeIntensity: 1,
+        opacityFrom: 1,
+        opacityTo: 0.4,
+      },
+    },
+    xaxis: {
+      categories: topPerformers.map((p: any) => p.userName),
+      labels: { style: { colors: '#A3AED0', fontSize: '14px', fontWeight: '500' } },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+    },
+    yaxis: { labels: { style: { colors: '#A3AED0' } } },
+    grid: { borderColor: 'rgba(163, 174, 208, 0.3)', strokeDashArray: 5 },
+    legend: { show: true, position: 'top' },
+  };
+  const barSeries = [
+    { name: 'Convertidos', data: topPerformers.map((p: any) => p.converted ?? 0) },
+    { name: 'Taxa (%)', data: topPerformers.map((p: any) => p.rate ?? 0) },
+  ];
+
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        backgroundColor: designSystem.colors.neutral.light
-      }}>
-        <div style={{ textAlign: 'center', padding: '24px' }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            border: `4px solid ${designSystem.colors.primary.light}`,
-            borderTop: `4px solid ${designSystem.colors.primary.dark}`,
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 16px'
-          }} />
-          <p style={{ color: designSystem.colors.primary.dark, fontWeight: '600' }}>
+      <Center h="60vh">
+        <Box textAlign="center">
+          <Spinner size="xl" thickness="4px" color="brand.600" mb="16px" />
+          <Text color="brand.600" fontWeight="600">
             Carregando Dashboard...
-          </p>
-        </div>
-      </div>
+          </Text>
+        </Box>
+      </Center>
     );
   }
 
   return (
-    <div style={{
-      padding: '32px',
-      backgroundColor: designSystem.colors.neutral.light,
-      minHeight: '100vh'
-    }}>
-      <h1 style={{
-        fontSize: '32px',
-        fontWeight: 'bold',
-        color: designSystem.colors.primary.dark,
-        marginBottom: '32px',
-        fontFamily: 'Segoe UI, sans-serif'
-      }}>
-        📊 Dashboard
-      </h1>
-
-      {/* Metrics Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: '24px',
-        marginBottom: '32px'
-      }}>
+    <Box>
+      {/* KPIs */}
+      <SimpleGrid columns={{ base: 1, md: 2, lg: 3, '2xl': 5 }} gap="20px" mb="20px">
         {metrics.map((metric, idx) => (
-          <Card key={idx} title={metric.label} icon={metric.icon} hoverable>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-              <p style={{
-                fontSize: '28px',
-                fontWeight: 'bold',
-                color: designSystem.colors.primary.dark
-              }}>
-                {metric.value}
-              </p>
-            </div>
-          </Card>
+          <MiniStatistics key={idx} label={metric.label} value={metric.value} icon={metric.icon} />
         ))}
-      </div>
+      </SimpleGrid>
 
-      {/* CPC input */}
-      <Card title="Configurar CPC" icon="💰" hoverable style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <label style={{ fontSize: '13px', color: designSystem.colors.neutral.gray600 }}>
+      {/* Configurar CPC */}
+      <Card mb="20px">
+        <Text fontSize="lg" fontWeight="700" color={titleColor} mb="12px">
+          💰 Configurar CPC
+        </Text>
+        <Flex align="center" gap="12px" flexWrap="wrap">
+          <FormLabel m="0" fontSize="sm" color="secondaryGray.700">
             Investimento total em anúncios (R$):
-          </label>
-          <input
+          </FormLabel>
+          <Input
             type="number"
             min="0"
             step="0.01"
             value={adSpend}
             onChange={(e) => handleAdSpendChange(e.target.value)}
             placeholder="Ex: 1500.00"
-            style={{
-              padding: '8px 12px',
-              border: `1px solid ${designSystem.colors.neutral.gray300}`,
-              borderRadius: '6px',
-              fontSize: '13px',
-              width: '160px'
-            }}
+            w="180px"
+            borderRadius="12px"
           />
-          <span style={{ fontSize: '12px', color: designSystem.colors.neutral.gray500 }}>
+          <Text fontSize="xs" color="secondaryGray.700">
             O CPC é calculado dividindo esse valor pelo total de leads recebidos.
-          </span>
-        </div>
+          </Text>
+        </Flex>
       </Card>
 
-      {/* Charts */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-        gap: '24px'
-      }}>
-        {/* Leads vs Conversions Chart */}
-        <Card title="Leads x Conversões (30 dias)" icon="📈" hoverable style={{ gridColumn: '1 / -1' }}>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={timeSeries}>
-              <CartesianGrid strokeDasharray="3 3" stroke={designSystem.colors.neutral.gray300} />
-              <XAxis dataKey="date" stroke={designSystem.colors.neutral.gray500} />
-              <YAxis stroke={designSystem.colors.neutral.gray500} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: designSystem.colors.neutral.white,
-                  border: `1px solid ${designSystem.colors.neutral.gray300}`,
-                  borderRadius: '8px'
-                }}
-              />
-              <Legend />
-              <Line type="monotone" dataKey="leadsCreated" name="Leads" stroke={designSystem.colors.primary.dark} strokeWidth={2} dot={{ fill: designSystem.colors.primary.dark }} />
-              <Line type="monotone" dataKey="converted" name="Conversões" stroke={designSystem.colors.accent.gold} strokeWidth={2} dot={{ fill: designSystem.colors.accent.gold }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
+      {/* Grafico de linha (largura total) */}
+      <Card mb="20px">
+        <Text fontSize="lg" fontWeight="700" color={titleColor} mb="12px">
+          📈 Leads x Conversões (30 dias)
+        </Text>
+        <Box h="320px">
+          <ReactApexChart options={lineOptions} series={lineSeries} type="line" height="100%" width="100%" />
+        </Box>
+      </Card>
 
-        {/* Origin Chart */}
-        <Card title="Origem dos Leads" icon="🌍" hoverable>
+      {/* Pizza + Barras */}
+      <SimpleGrid columns={{ base: 1, lg: 2 }} gap="20px">
+        <Card>
+          <Text fontSize="lg" fontWeight="700" color={titleColor} mb="12px">
+            🌍 Origem dos Leads
+          </Text>
           {originData.length === 0 ? (
-            <p style={{ textAlign: 'center', color: designSystem.colors.neutral.gray500, padding: '48px 0' }}>
-              Sem dados de origem disponíveis ainda.
-            </p>
+            <Center h="300px">
+              <Text color="secondaryGray.700">Sem dados de origem disponíveis ainda.</Text>
+            </Center>
           ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={originData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  outerRadius={80}
-                  dataKey="value"
-                >
-                  {originData.map((_entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: designSystem.colors.neutral.white,
-                    border: `1px solid ${designSystem.colors.neutral.gray300}`,
-                    borderRadius: '8px'
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <Box h="320px">
+              <ReactApexChart options={pieOptions} series={pieSeries} type="donut" height="100%" width="100%" />
+            </Box>
           )}
         </Card>
 
-        {/* Conversion by Responsible */}
-        <Card title="Conversão por Responsável" icon="🏆" hoverable>
+        <Card>
+          <Text fontSize="lg" fontWeight="700" color={titleColor} mb="12px">
+            🏆 Conversão por Responsável
+          </Text>
           {topPerformers.length === 0 ? (
-            <p style={{ textAlign: 'center', color: designSystem.colors.neutral.gray500, padding: '48px 0' }}>
-              Sem conversões registradas no período.
-            </p>
+            <Center h="300px">
+              <Text color="secondaryGray.700">Sem conversões registradas no período.</Text>
+            </Center>
           ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={topPerformers}>
-                <CartesianGrid strokeDasharray="3 3" stroke={designSystem.colors.neutral.gray300} />
-                <XAxis dataKey="userName" stroke={designSystem.colors.neutral.gray500} />
-                <YAxis stroke={designSystem.colors.neutral.gray500} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: designSystem.colors.neutral.white,
-                    border: `1px solid ${designSystem.colors.neutral.gray300}`,
-                    borderRadius: '8px'
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="converted" name="Convertidos" fill={designSystem.colors.primary.dark} radius={[8, 8, 0, 0]} />
-                <Bar dataKey="rate" name="Taxa (%)" fill={designSystem.colors.accent.gold} radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <Box h="320px">
+              <ReactApexChart options={barOptions} series={barSeries} type="bar" height="100%" width="100%" />
+            </Box>
           )}
         </Card>
-      </div>
-    </div>
+      </SimpleGrid>
+    </Box>
   );
 }
