@@ -7,7 +7,7 @@
  */
 import type { Lead } from '@/types';
 
-export const DEMO_FALLBACK = true;
+export const DEMO_FALLBACK = false;
 
 export const demoLeads: Lead[] = [
   {
