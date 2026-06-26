@@ -14,6 +14,7 @@ import automationRoutes from './routes/automation.js';
 import reportsRoutes from './routes/reports.js';
 import tasksRoutes from './routes/tasks.js';
 import typebotRoutes from './routes/typebotWebhook.js';
+import facebookRoutes from './routes/facebookWebhook.js';
 import { socketService } from './socket/service.js';
 import { sequenceScheduler } from './scheduler/sequenceScheduler.js';
 import { automationScheduler } from './scheduler/automationScheduler.js';
@@ -114,6 +115,7 @@ app.use('/api/automation', automationRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/typebot', typebotRoutes);
+app.use('/api/facebook', facebookRoutes);
 
 // Error handling
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
