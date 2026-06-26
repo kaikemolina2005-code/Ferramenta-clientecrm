@@ -63,7 +63,7 @@ interface WebhookPayload {
   }[];
 }
 
-const WHATSAPP_API_URL = 'https://graph.instagram.com/v18.0';
+const WHATSAPP_API_URL = 'https://graph.facebook.com/v18.0';
 
 export class WhatsAppService {
   private phoneNumberId: string;
