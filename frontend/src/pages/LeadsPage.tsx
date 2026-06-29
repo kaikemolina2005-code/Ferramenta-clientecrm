@@ -314,8 +314,8 @@ export function LeadsPage() {
             Nenhum lead encontrado
           </Text>
         ) : (
-          <Box overflowX="auto">
-            <Table variant="simple">
+          <Box overflowX="auto" w="100%">
+            <Table variant="simple" minW="720px">
               <Thead>
                 {table.getHeaderGroups().map((hg) => (
                   <Tr key={hg.id}>
@@ -329,6 +329,7 @@ export function LeadsPage() {
                           cursor={header.column.getCanSort() ? 'pointer' : 'default'}
                           onClick={header.column.getToggleSortingHandler()}
                           userSelect="none"
+                          whiteSpace="nowrap"
                         >
                           <Flex align="center" gap="4px">
                             {flexRender(header.column.columnDef.header, header.getContext())}
@@ -345,7 +346,7 @@ export function LeadsPage() {
                 {table.getRowModel().rows.map((row) => (
                   <Tr key={row.id} _hover={{ bg: hoverBg }}>
                     {row.getVisibleCells().map((cell) => (
-                      <Td key={cell.id} borderColor={borderColor}>
+                      <Td key={cell.id} borderColor={borderColor} whiteSpace="nowrap">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </Td>
                     ))}
