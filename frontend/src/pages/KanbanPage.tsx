@@ -464,6 +464,27 @@ export function KanbanPage() {
                   </span>
                 </div>
 
+                {/* Botao "mover para ca" (aparece quando um card esta selecionado - util no celular) */}
+                {draggedCard && getStageKey(draggedCard, activeSector) !== stage.key && (
+                  <button
+                    onClick={() => handleDrop(stage.key)}
+                    style={{
+                      width: '100%',
+                      marginBottom: '12px',
+                      padding: '10px',
+                      backgroundColor: activeColor,
+                      color: designSystem.colors.neutral.white,
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '13px'
+                    }}
+                  >
+                    📥 Mover "{draggedCard.lead?.name || 'card'}" para cá
+                  </button>
+                )}
+
                 {/* Cards */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '500px', overflowY: 'auto' }}>
                   {stageCards.length === 0 ? (
@@ -516,6 +537,27 @@ export function KanbanPage() {
                           }}>
                             {card.lead?.name || 'Sem nome'}
                           </h3>
+
+                          {/* Botao mover (selecionar para mover - funciona no celular) */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDraggedCard(draggedCard?.id === card.id ? null : card);
+                            }}
+                            style={{
+                              alignSelf: 'flex-start',
+                              padding: '4px 10px',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              border: `1px solid ${activeColor}`,
+                              borderRadius: '6px',
+                              backgroundColor: draggedCard?.id === card.id ? activeColor : designSystem.colors.neutral.white,
+                              color: draggedCard?.id === card.id ? designSystem.colors.neutral.white : activeColor,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {draggedCard?.id === card.id ? '✓ Selecionado (escolha a coluna)' : '↔ Mover'}
+                          </button>
 
                           {/* Category Badge */}
                           {card.lead?.category && (
