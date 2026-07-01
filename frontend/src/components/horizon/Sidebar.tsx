@@ -37,7 +37,7 @@ export const SIDEBAR_COLLAPSED = 84;
 const NAV_ITEMS = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/leads', icon: Users, label: 'Leads' },
-  { to: '/kanban', icon: Kanban, label: 'Kanban' },
+  { to: '/kanban', icon: Kanban, label: 'CRM' },
   { to: '/tarefas', icon: CheckSquare, label: 'Tarefas' },
   { to: '/automation', icon: Settings, label: 'Automações' },
   { to: '/reports', icon: BarChart2, label: 'Relatórios' },

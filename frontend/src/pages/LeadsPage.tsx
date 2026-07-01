@@ -102,6 +102,9 @@ export function LeadsPage() {
   const [deleteReason, setDeleteReason] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [editTarget, setEditTarget] = useState<Lead | null>(null);
+  const [editForm, setEditForm] = useState(EMPTY_FORM);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const titleColor = useColorModeValue('navy.700', 'white');
   const headerColor = useColorModeValue('secondaryGray.600', 'white');
@@ -149,6 +152,39 @@ export function LeadsPage() {
       setLeads(leads.map((lead) => (lead.id === leadId ? updated : lead)));
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
+    }
+  };
+
+  const openEditModal = (lead: Lead) => {
+    setEditForm({
+      name: lead.name || '',
+      phone: lead.phone || '',
+      email: lead.email || '',
+      cpf: lead.cpf || '',
+      whatsappId: lead.whatsappId || '',
+      city: (lead as any).city || '',
+      state: (lead as any).state || '',
+      category: (lead.category as any) || 'CONSULTATION',
+      source: (lead as any).source || 'WEBSITE',
+    });
+    setEditTarget(lead);
+  };
+
+  const handleUpdateLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTarget) return;
+    try {
+      setSavingEdit(true);
+      const updated = await leadService.update(editTarget.id, {
+        ...editForm,
+        category: editForm.category as any,
+      });
+      setLeads(leads.map((l) => (l.id === editTarget.id ? updated : l)));
+      setEditTarget(null);
+    } catch (error) {
+      console.error('Erro ao editar lead:', error);
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -229,6 +265,8 @@ export function LeadsPage() {
               borderRadius="full"
             />
             <MenuList borderRadius="16px" boxShadow="0px 18px 40px rgba(112,144,176,0.2)">
+              <MenuItem onClick={() => openEditModal(row.original)}>✏️ Editar cadastro</MenuItem>
+              <MenuDivider />
               <MenuGroup title="Mudar status">
                 {Object.entries(STATUS_META).map(([value, meta]) => (
                   <MenuItem
@@ -470,6 +508,56 @@ export function LeadsPage() {
             </Button>
             <Button variant="brand" type="submit">
               ✓ Criar Lead
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Modal: editar lead */}
+      <Modal isOpen={!!editTarget} onClose={() => !savingEdit && setEditTarget(null)} size="xl" isCentered>
+        <ModalOverlay />
+        <ModalContent borderRadius="20px" as="form" onSubmit={handleUpdateLead}>
+          <ModalHeader color={titleColor}>✏️ Editar Cadastro</ModalHeader>
+          <ModalCloseButton isDisabled={savingEdit} />
+          <ModalBody>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing="16px">
+              <FormControl isRequired>
+                <FormLabel fontSize="sm">Nome</FormLabel>
+                <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel fontSize="sm">Email</FormLabel>
+                <Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel fontSize="sm">Telefone</FormLabel>
+                <Input type="tel" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">WhatsApp (ex: 5511999990000)</FormLabel>
+                <Input type="tel" value={editForm.whatsappId} onChange={(e) => setEditForm({ ...editForm, whatsappId: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">CPF</FormLabel>
+                <Input value={editForm.cpf} onChange={(e) => setEditForm({ ...editForm, cpf: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">Categoria</FormLabel>
+                <Select value={editForm.category} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })} borderRadius="12px">
+                  <option value="CONSULTATION">Consulta</option>
+                  <option value="PROCESS">Processo</option>
+                  <option value="BPC_LOAS">BPC/LOAS</option>
+                  <option value="RETIREMENT">Aposentadoria</option>
+                </Select>
+              </FormControl>
+            </SimpleGrid>
+          </ModalBody>
+          <ModalFooter gap="10px">
+            <Button variant="ghost" onClick={() => setEditTarget(null)} isDisabled={savingEdit}>
+              Cancelar
+            </Button>
+            <Button variant="brand" type="submit" isLoading={savingEdit}>
+              Salvar alterações
             </Button>
           </ModalFooter>
         </ModalContent>

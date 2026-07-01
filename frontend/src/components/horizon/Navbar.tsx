@@ -21,7 +21,7 @@ import SearchBar from './SearchBar';
 const PAGE_NAMES: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/leads': 'Leads',
-  '/kanban': 'Kanban',
+  '/kanban': 'CRM',
   '/tarefas': 'Tarefas',
   '/automation': 'Automações',
   '/reports': 'Relatórios',

@@ -37,10 +37,20 @@ const DEFAULT_STAGES: Record<string, { key: string; name: string; editable?: boo
 };
 
 const STAGE_NAMES_STORAGE_KEY = 'kanban_stage_names';
+const STAGE_REMOVED_STORAGE_KEY = 'kanban_stage_removed';
 
 function loadStageNameOverrides(): Record<string, Record<string, string>> {
   try {
     const raw = localStorage.getItem(STAGE_NAMES_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function loadRemovedStages(): Record<string, string[]> {
+  try {
+    const raw = localStorage.getItem(STAGE_REMOVED_STORAGE_KEY);
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
@@ -69,6 +79,7 @@ export function KanbanPage() {
     loadStageNameOverrides()
   );
   const [editingStage, setEditingStage] = useState<string | null>(null);
+  const [removedStages, setRemovedStages] = useState<Record<string, string[]>>(loadRemovedStages());
   const [taskModalCard, setTaskModalCard] = useState<KanbanCardType | null>(null);
   const [leadTasks, setLeadTasks] = useState<LeadTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
@@ -89,6 +100,33 @@ export function KanbanPage() {
     };
     setStageNameOverrides(updated);
     localStorage.setItem(STAGE_NAMES_STORAGE_KEY, JSON.stringify(updated));
+  };
+
+  const isStageRemoved = (sector: string, stageKey: string): boolean => {
+    return (removedStages[sector] || []).includes(stageKey);
+  };
+
+  const deleteStage = (sector: string, stageKey: string, stageName: string, cardCount: number) => {
+    if (cardCount > 0) {
+      alert(
+        `A coluna "${stageName}" tem ${cardCount} card(s). Mova os cards para outra coluna antes de excluí-la.`
+      );
+      return;
+    }
+    if (!confirm(`Excluir a coluna "${stageName}"?`)) return;
+
+    const updated = {
+      ...removedStages,
+      [sector]: [...(removedStages[sector] || []), stageKey],
+    };
+    setRemovedStages(updated);
+    localStorage.setItem(STAGE_REMOVED_STORAGE_KEY, JSON.stringify(updated));
+  };
+
+  const restoreStages = (sector: string) => {
+    const updated = { ...removedStages, [sector]: [] };
+    setRemovedStages(updated);
+    localStorage.setItem(STAGE_REMOVED_STORAGE_KEY, JSON.stringify(updated));
   };
 
   useEffect(() => {
@@ -272,7 +310,7 @@ export function KanbanPage() {
             margin: '0 auto 16px'
           }} />
           <p style={{ color: designSystem.colors.primary.dark, fontWeight: '600' }}>
-            Carregando Kanban...
+            Carregando CRM...
           </p>
         </div>
       </div>
@@ -297,7 +335,7 @@ export function KanbanPage() {
           fontWeight: 'bold',
           color: designSystem.colors.primary.dark
         }}>
-          📊 Kanban - Gestão de Processos
+          📊 CRM - Gestão de Processos
         </h1>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
@@ -376,15 +414,35 @@ export function KanbanPage() {
           fontSize: '18px',
           marginBottom: '20px'
         }}>
-          {sectorNames[activeSector].icon} Kanban - {sectorNames[activeSector].name}
+          {sectorNames[activeSector].icon} CRM - {sectorNames[activeSector].name}
         </h2>
+
+        {(removedStages[activeSector] || []).length > 0 && (
+          <button
+            type="button"
+            onClick={() => restoreStages(activeSector)}
+            style={{
+              marginBottom: '16px',
+              padding: '6px 12px',
+              border: `1px solid ${activeColor}`,
+              borderRadius: '8px',
+              background: 'transparent',
+              color: activeColor,
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600'
+            }}
+          >
+            ↩️ Restaurar colunas excluídas
+          </button>
+        )}
 
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
           gap: '24px'
         }}>
-          {DEFAULT_STAGES[activeSector].map((stage) => {
+          {DEFAULT_STAGES[activeSector].filter((stage) => !isStageRemoved(activeSector, stage.key)).map((stage) => {
             const stageCards = sectorCards.filter((card) => getStageKey(card, activeSector) === stage.key);
             const stageName = getStageName(activeSector, stage.key, stage.name);
             const editId = `${activeSector}:${stage.key}`;
@@ -451,17 +509,33 @@ export function KanbanPage() {
                       {stage.editable && <span style={{ fontSize: '12px' }}>✏️</span>}
                     </h3>
                   )}
-                  <span style={{
-                    backgroundColor: activeColor,
-                    color: designSystem.colors.neutral.white,
-                    padding: '4px 12px',
-                    borderRadius: '16px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    flexShrink: 0
-                  }}>
-                    {stageCards.length}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                    <span style={{
+                      backgroundColor: activeColor,
+                      color: designSystem.colors.neutral.white,
+                      padding: '4px 12px',
+                      borderRadius: '16px',
+                      fontSize: '12px',
+                      fontWeight: '600'
+                    }}>
+                      {stageCards.length}
+                    </span>
+                    <button
+                      type="button"
+                      title="Excluir coluna"
+                      onClick={() => deleteStage(activeSector, stage.key, stageName, stageCards.length)}
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        lineHeight: 1,
+                        padding: '2px'
+                      }}
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
 
                 {/* Botao "mover para ca" (aparece quando um card esta selecionado - util no celular) */}
@@ -658,7 +732,7 @@ export function KanbanPage() {
           color: designSystem.colors.primary.dark,
           margin: 0
         }}>
-          💡 <strong>Dica:</strong> Cada aba (Comercial, Jurídico, Administrativo) é um Kanban isolado com suas próprias etapas. Arraste os cards entre as colunas para mover os processos dentro do setor. Colunas com ✏️ podem ter o nome alterado clicando no título.
+          💡 <strong>Dica:</strong> Cada aba (Comercial, Jurídico, Administrativo) é um CRM isolado com suas próprias etapas. Mova os cards entre as colunas (arrastando no PC ou pelo botão "Mover" no celular). Colunas com ✏️ podem ter o nome alterado clicando no título, e o 🗑️ exclui a coluna (se estiver vazia).
         </p>
       </div>
 
@@ -699,7 +773,7 @@ export function KanbanPage() {
               return (
                 <p style={{ textAlign: 'center', color: designSystem.colors.neutral.gray500, padding: '24px 0' }}>
                   {availableLeads.length === 0
-                    ? 'Nenhum lead disponível. Cadastre um novo lead na página de Leads para poder adicioná-lo a um Kanban.'
+                    ? 'Nenhum lead disponível. Cadastre um novo lead na página de Leads para poder adicioná-lo ao CRM.'
                     : 'Nenhum lead encontrado para essa busca.'}
                 </p>
               );
