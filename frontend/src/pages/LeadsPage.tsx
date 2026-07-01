@@ -61,6 +61,7 @@ import Card from '@/components/horizon/Card';
 import { leadService } from '@/services/leadService';
 import type { Lead } from '@/types';
 import { DEMO_FALLBACK, demoLeads } from '@/utils/demoData';
+import { generateLeadWord, generateLeadPDF } from '@/utils/leadDocuments';
 
 const STATUS_META: Record<string, { label: string; colorScheme: string }> = {
   INITIAL: { label: 'Inicial', colorScheme: 'blue' },
@@ -83,8 +84,14 @@ const EMPTY_FORM = {
   email: '',
   cpf: '',
   whatsappId: '',
+  address: '',
+  neighborhood: '',
+  zipCode: '',
   city: '',
   state: '',
+  nationality: '',
+  maritalStatus: '',
+  profession: '',
   category: 'CONSULTATION',
   source: 'WEBSITE',
 };
@@ -162,10 +169,16 @@ export function LeadsPage() {
       email: lead.email || '',
       cpf: lead.cpf || '',
       whatsappId: lead.whatsappId || '',
-      city: (lead as any).city || '',
-      state: (lead as any).state || '',
+      address: lead.address || '',
+      neighborhood: lead.neighborhood || '',
+      zipCode: lead.zipCode || '',
+      city: lead.city || '',
+      state: lead.state || '',
+      nationality: lead.nationality || '',
+      maritalStatus: lead.maritalStatus || '',
+      profession: lead.profession || '',
       category: (lead.category as any) || 'CONSULTATION',
-      source: (lead as any).source || 'WEBSITE',
+      source: lead.source || 'WEBSITE',
     });
     setEditTarget(lead);
   };
@@ -266,6 +279,11 @@ export function LeadsPage() {
             />
             <MenuList borderRadius="16px" boxShadow="0px 18px 40px rgba(112,144,176,0.2)">
               <MenuItem onClick={() => openEditModal(row.original)}>✏️ Editar cadastro</MenuItem>
+              <MenuDivider />
+              <MenuGroup title="Gerar documentos">
+                <MenuItem onClick={() => generateLeadWord(row.original)}>📄 Baixar em Word</MenuItem>
+                <MenuItem onClick={() => generateLeadPDF(row.original)}>📄 Baixar em PDF</MenuItem>
+              </MenuGroup>
               <MenuDivider />
               <MenuGroup title="Mudar status">
                 {Object.entries(STATUS_META).map(([value, meta]) => (
@@ -475,6 +493,38 @@ export function LeadsPage() {
                 />
               </FormControl>
               <FormControl>
+                <FormLabel fontSize="sm">Endereço (rua e número)</FormLabel>
+                <Input value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">Bairro</FormLabel>
+                <Input value={formData.neighborhood} onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">CEP</FormLabel>
+                <Input value={formData.zipCode} onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">Cidade</FormLabel>
+                <Input value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">Estado (UF)</FormLabel>
+                <Input value={formData.state} onChange={(e) => setFormData({ ...formData, state: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">Nacionalidade</FormLabel>
+                <Input placeholder="brasileiro(a)" value={formData.nationality} onChange={(e) => setFormData({ ...formData, nationality: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">Estado civil</FormLabel>
+                <Input placeholder="solteiro(a), casado(a)..." value={formData.maritalStatus} onChange={(e) => setFormData({ ...formData, maritalStatus: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">Profissão</FormLabel>
+                <Input value={formData.profession} onChange={(e) => setFormData({ ...formData, profession: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
                 <FormLabel fontSize="sm">Categoria</FormLabel>
                 <Select
                   value={formData.category}
@@ -540,6 +590,38 @@ export function LeadsPage() {
               <FormControl>
                 <FormLabel fontSize="sm">CPF</FormLabel>
                 <Input value={editForm.cpf} onChange={(e) => setEditForm({ ...editForm, cpf: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">Endereço (rua e número)</FormLabel>
+                <Input value={editForm.address} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">Bairro</FormLabel>
+                <Input value={editForm.neighborhood} onChange={(e) => setEditForm({ ...editForm, neighborhood: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">CEP</FormLabel>
+                <Input value={editForm.zipCode} onChange={(e) => setEditForm({ ...editForm, zipCode: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">Cidade</FormLabel>
+                <Input value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">Estado (UF)</FormLabel>
+                <Input value={editForm.state} onChange={(e) => setEditForm({ ...editForm, state: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">Nacionalidade</FormLabel>
+                <Input placeholder="brasileiro(a)" value={editForm.nationality} onChange={(e) => setEditForm({ ...editForm, nationality: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">Estado civil</FormLabel>
+                <Input placeholder="solteiro(a), casado(a)..." value={editForm.maritalStatus} onChange={(e) => setEditForm({ ...editForm, maritalStatus: e.target.value })} borderRadius="12px" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm">Profissão</FormLabel>
+                <Input value={editForm.profession} onChange={(e) => setEditForm({ ...editForm, profession: e.target.value })} borderRadius="12px" />
               </FormControl>
               <FormControl>
                 <FormLabel fontSize="sm">Categoria</FormLabel>

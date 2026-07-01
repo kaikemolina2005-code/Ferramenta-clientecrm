@@ -23,9 +23,13 @@ export interface Lead {
   phone: string;
   email?: string;
   address?: string;
+  neighborhood?: string;
   city?: string;
   state?: string;
   zipCode?: string;
+  nationality?: string;
+  maritalStatus?: string;
+  profession?: string;
   category: LeadCategory;
   status: LeadStatus;
   source?: string;

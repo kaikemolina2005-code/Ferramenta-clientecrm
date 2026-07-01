@@ -126,13 +126,41 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   });
 });
 
-server.listen(PORT, () => {
+/**
+ * Migração leve e idempotente: garante que as colunas novas do Lead existam.
+ * Usa ADD COLUMN IF NOT EXISTS, então é seguro rodar a cada boot e não quebra
+ * se as colunas já existirem (evita depender do prisma migrate em produção).
+ */
+async function ensureLeadColumns() {
+  try {
+    const { prisma } = await import('./services/prisma.js');
+    const columns = [
+      'neighborhood',
+      'nationality',
+      'maritalStatus',
+      'profession',
+    ];
+    for (const col of columns) {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "${col}" TEXT`
+      );
+    }
+    console.log('✅ Colunas do Lead verificadas/criadas');
+  } catch (error) {
+    console.error('⚠️ Erro ao garantir colunas do Lead:', error);
+  }
+}
+
+server.listen(PORT, async () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`Frontend URL: ${process.env.FRONTEND_URL}`);
-  
+
+  // Garante colunas novas antes de servir requisições que as utilizam
+  await ensureLeadColumns();
+
   // Inicia o scheduler de email sequences
   sequenceScheduler.start();
-  
+
   // Inicia o scheduler de automação (Passo 10)
   automationScheduler.start();
 });

@@ -78,7 +78,7 @@ export async function getLeadById(req: AuthenticatedRequest, res: Response) {
  */
 export async function createLead(req: AuthenticatedRequest, res: Response) {
   try {
-    const { name, phone, email, cpf, whatsappId, birthDate, address, city, state, zipCode, category, source } = req.body;
+    const { name, phone, email, cpf, whatsappId, birthDate, address, neighborhood, city, state, zipCode, nationality, maritalStatus, profession, category, source } = req.body;
 
     if (!name || !phone || !email || !source) {
       return res.status(400).json({
@@ -94,9 +94,13 @@ export async function createLead(req: AuthenticatedRequest, res: Response) {
       whatsappId: whatsappId || undefined,
       birthDate: birthDate ? new Date(birthDate) : undefined,
       address,
+      neighborhood,
       city,
       state,
       zipCode,
+      nationality,
+      maritalStatus,
+      profession,
       category: category || 'CONSULTATION',
       responsibleId: req.userId,
       source,

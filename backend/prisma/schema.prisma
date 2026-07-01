@@ -294,10 +294,14 @@ model Lead {
   phone           String
   email           String?
   address         String?
+  neighborhood    String?
   city            String?
   state           String?
   zipCode         String?
-  
+  nationality     String?
+  maritalStatus   String?
+  profession      String?
+
   category        LeadCategory
   status          LeadStatus  @default(INITIAL)
   source          String?

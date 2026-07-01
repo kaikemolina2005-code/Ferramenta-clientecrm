@@ -15,9 +15,13 @@ export class LeadService {
     whatsappId?: string;
     birthDate?: Date;
     address?: string;
+    neighborhood?: string;
     city?: string;
     state?: string;
     zipCode?: string;
+    nationality?: string;
+    maritalStatus?: string;
+    profession?: string;
     category?: LeadCategory;
     responsibleId?: string;
     source: string;
@@ -31,9 +35,13 @@ export class LeadService {
         whatsappId: data.whatsappId || null,
         birthDate: data.birthDate,
         address: data.address,
+        neighborhood: data.neighborhood,
         city: data.city,
         state: data.state,
         zipCode: data.zipCode,
+        nationality: data.nationality,
+        maritalStatus: data.maritalStatus,
+        profession: data.profession,
         category: data.category || 'CONSULTATION',
         status: 'INITIAL',
         source: data.source,
