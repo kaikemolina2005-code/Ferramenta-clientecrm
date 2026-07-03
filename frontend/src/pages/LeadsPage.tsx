@@ -104,6 +104,11 @@ export function LeadsPage() {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [sourceFilter, setSourceFilter] = useState('ALL');
+  const [responsibleFilter, setResponsibleFilter] = useState('ALL');
+  const [sortBy, setSortBy] = useState('recent');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
@@ -309,8 +314,39 @@ export function LeadsPage() {
     [leads, cellColor, subCellColor],
   );
 
+  // Opções dinâmicas de origem e responsável (a partir dos leads carregados)
+  const uniqueSources = useMemo(() => {
+    const set = new Set<string>();
+    leads.forEach((l) => { if (l.source) set.add(l.source); });
+    return Array.from(set).sort();
+  }, [leads]);
+
+  const uniqueResponsibles = useMemo(() => {
+    const map = new Map<string, string>();
+    leads.forEach((l) => {
+      if (l.responsibleId && l.responsible?.name) map.set(l.responsibleId, l.responsible.name);
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [leads]);
+
+  // Aplica filtros + ordenação antes de passar para a tabela
+  const displayLeads = useMemo(() => {
+    let list = leads.filter((l) =>
+      (statusFilter === 'ALL' || l.status === statusFilter) &&
+      (categoryFilter === 'ALL' || l.category === categoryFilter) &&
+      (sourceFilter === 'ALL' || (l.source || '') === sourceFilter) &&
+      (responsibleFilter === 'ALL' || l.responsibleId === responsibleFilter)
+    );
+    const byDate = (a: Lead, b: Lead) =>
+      new Date(b.createdAt as any).getTime() - new Date(a.createdAt as any).getTime();
+    if (sortBy === 'recent') list = [...list].sort(byDate);
+    else if (sortBy === 'oldest') list = [...list].sort((a, b) => byDate(b, a));
+    else if (sortBy === 'name') list = [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    return list;
+  }, [leads, statusFilter, categoryFilter, sourceFilter, responsibleFilter, sortBy]);
+
   const table = useReactTable({
-    data: leads,
+    data: displayLeads,
     columns,
     state: { sorting, globalFilter },
     onSortingChange: setSorting,
@@ -358,6 +394,64 @@ export function LeadsPage() {
               Novo Lead
             </Button>
           </HStack>
+        </Flex>
+
+        {/* Contador */}
+        <Text fontSize="sm" color="secondaryGray.600" mb="10px">
+          Existem <strong>{leads.length}</strong> leads na sua base
+          {' • '}
+          <strong>{table.getFilteredRowModel().rows.length}</strong> encontrados
+        </Text>
+
+        {/* Barra de filtros + ordenação */}
+        <Flex gap="10px" mb="16px" flexWrap="wrap" align="center">
+          <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} w={{ base: '100%', sm: '170px' }} borderRadius="12px" fontSize="sm">
+            <option value="ALL">Status: todos</option>
+            <option value="INITIAL">Inicial</option>
+            <option value="CONSULTING">Consultando</option>
+            <option value="PAYMENT">Pagamento</option>
+            <option value="LOSS">Perda</option>
+            <option value="CONVERTED">Convertido</option>
+          </Select>
+          <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} w={{ base: '100%', sm: '180px' }} borderRadius="12px" fontSize="sm">
+            <option value="ALL">Categoria: todas</option>
+            <option value="CONSULTATION">Consulta</option>
+            <option value="PROCESS">Processo</option>
+            <option value="BPC_LOAS">BPC/LOAS</option>
+            <option value="RETIREMENT">Aposentadoria</option>
+          </Select>
+          <Select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} w={{ base: '100%', sm: '170px' }} borderRadius="12px" fontSize="sm">
+            <option value="ALL">Origem: todas</option>
+            {uniqueSources.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </Select>
+          <Select value={responsibleFilter} onChange={(e) => setResponsibleFilter(e.target.value)} w={{ base: '100%', sm: '190px' }} borderRadius="12px" fontSize="sm">
+            <option value="ALL">Responsável: todos</option>
+            {uniqueResponsibles.map((r) => (
+              <option key={r.id} value={r.id}>{r.name}</option>
+            ))}
+          </Select>
+          <Select value={sortBy} onChange={(e) => setSortBy(e.target.value)} w={{ base: '100%', sm: '190px' }} borderRadius="12px" fontSize="sm">
+            <option value="recent">Ordenar: mais recentes</option>
+            <option value="oldest">Ordenar: mais antigos</option>
+            <option value="name">Ordenar: nome (A-Z)</option>
+          </Select>
+          {(statusFilter !== 'ALL' || categoryFilter !== 'ALL' || sourceFilter !== 'ALL' || responsibleFilter !== 'ALL' || globalFilter) && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setStatusFilter('ALL');
+                setCategoryFilter('ALL');
+                setSourceFilter('ALL');
+                setResponsibleFilter('ALL');
+                setGlobalFilter('');
+              }}
+            >
+              Limpar filtros
+            </Button>
+          )}
         </Flex>
 
         {/* Tabela */}
