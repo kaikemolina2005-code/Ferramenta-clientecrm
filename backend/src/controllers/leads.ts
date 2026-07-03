@@ -268,6 +268,61 @@ export async function deleteLead(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
+ * POST /leads/import
+ * Importa vários leads de uma vez (a partir de uma planilha CSV)
+ */
+export async function importLeads(req: AuthenticatedRequest, res: Response) {
+  try {
+    const rows = Array.isArray(req.body?.leads) ? req.body.leads : [];
+    if (rows.length === 0) {
+      return res.status(400).json({ error: 'Nenhum lead para importar' });
+    }
+
+    let created = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    for (const row of rows) {
+      const name = (row.name || '').toString().trim();
+      const phone = (row.phone || '').toString().replace(/\D/g, '');
+      if (!name || !phone) {
+        failed++;
+        continue;
+      }
+      try {
+        await leadService.createLead({
+          name,
+          phone,
+          email: (row.email || '').toString().trim().toLowerCase(),
+          cpf: (row.cpf || '').toString().replace(/\D/g, '') || undefined,
+          address: row.address || undefined,
+          neighborhood: row.neighborhood || undefined,
+          city: row.city || undefined,
+          state: row.state || undefined,
+          zipCode: row.zipCode || undefined,
+          nationality: row.nationality || undefined,
+          maritalStatus: row.maritalStatus || undefined,
+          profession: row.profession || undefined,
+          category: (row.category || 'CONSULTATION') as any,
+          source: row.source || 'IMPORTACAO',
+          responsibleId: req.userId,
+        });
+        created++;
+      } catch (err: any) {
+        // P2002 = violação de campo único (ex: CPF já existe) -> ignora duplicado
+        if (err?.code === 'P2002') skipped++;
+        else failed++;
+      }
+    }
+
+    res.json({ success: true, created, skipped, failed, total: rows.length });
+  } catch (error: any) {
+    console.error('Import leads error:', error);
+    res.status(500).json({ error: error.message || 'Erro ao importar leads' });
+  }
+}
+
+/**
  * GET /leads/:id/activity
  * Linha do tempo de atividades de um lead
  */

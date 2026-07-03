@@ -34,6 +34,11 @@ export const leadService = {
     return response.data.data || [];
   },
 
+  async importLeads(leads: any[]): Promise<{ created: number; skipped: number; failed: number; total: number }> {
+    const response = await api.post('/leads/import', { leads });
+    return response.data;
+  },
+
   async search(query: string): Promise<Lead[]> {
     const response = await api.get(`/leads/search/${query}`);
     return response.data.data || [];

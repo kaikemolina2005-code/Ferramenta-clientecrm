@@ -63,6 +63,7 @@ import { leadService } from '@/services/leadService';
 import type { Lead } from '@/types';
 import { DEMO_FALLBACK, demoLeads } from '@/utils/demoData';
 import { generateLeadWord, generateLeadPDF } from '@/utils/leadDocuments';
+import { exportLeadsCsv, parseLeadsCsv } from '@/utils/leadCsv';
 
 const STATUS_META: Record<string, { label: string; colorScheme: string }> = {
   INITIAL: { label: 'Inicial', colorScheme: 'blue' },
@@ -111,6 +112,9 @@ export function LeadsPage() {
   const [sourceFilter, setSourceFilter] = useState('ALL');
   const [responsibleFilter, setResponsibleFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState('recent');
+  const [importOpen, setImportOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ created: number; skipped: number; failed: number; total: number } | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
@@ -166,6 +170,31 @@ export function LeadsPage() {
       setLeads(leads.map((lead) => (lead.id === leadId ? updated : lead)));
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
+    }
+  };
+
+  const handleExport = () => {
+    exportLeadsCsv(displayLeads.length ? displayLeads : leads);
+  };
+
+  const handleImportFile = async (file: File) => {
+    try {
+      setImporting(true);
+      setImportResult(null);
+      const text = await file.text();
+      const parsed = parseLeadsCsv(text);
+      if (parsed.length === 0) {
+        setImportResult({ created: 0, skipped: 0, failed: 0, total: 0 });
+        return;
+      }
+      const result = await leadService.importLeads(parsed);
+      setImportResult(result);
+      await loadLeads();
+    } catch (error) {
+      console.error('Erro ao importar:', error);
+      setImportResult({ created: 0, skipped: 0, failed: -1, total: 0 });
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -393,6 +422,12 @@ export function LeadsPage() {
                 fontSize="sm"
               />
             </InputGroup>
+            <Button variant="outline" onClick={() => { setImportResult(null); setImportOpen(true); }} flexShrink={0}>
+              Importar
+            </Button>
+            <Button variant="outline" onClick={handleExport} flexShrink={0}>
+              Exportar
+            </Button>
             <Button
               variant="brand"
               leftIcon={<Icon as={Plus} boxSize="18px" />}
@@ -660,6 +695,63 @@ export function LeadsPage() {
             </Button>
             <Button variant="brand" type="submit">
               ✓ Criar Lead
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Modal: importar leads (CSV) */}
+      <Modal isOpen={importOpen} onClose={() => !importing && setImportOpen(false)} size="lg" isCentered>
+        <ModalOverlay />
+        <ModalContent borderRadius="20px">
+          <ModalHeader color={titleColor}>📥 Importar Leads (CSV)</ModalHeader>
+          <ModalCloseButton isDisabled={importing} />
+          <ModalBody>
+            <Text fontSize="sm" color="secondaryGray.600" mb="12px">
+              Envie um arquivo <strong>.csv</strong> (planilha do Excel salva como CSV). A primeira
+              linha deve conter os títulos das colunas. Reconhecemos automaticamente:
+              <br />
+              <strong>Nome, Email, Telefone, CPF, Endereco, Bairro, Cidade, Estado, CEP, Nacionalidade, EstadoCivil, Profissao, Categoria, Origem</strong>.
+              <br />
+              Obrigatórios: <strong>Nome</strong> e <strong>Telefone</strong>. Leads com CPF já
+              existente são ignorados (não duplica).
+            </Text>
+
+            <Input
+              type="file"
+              accept=".csv,text/csv"
+              p="6px"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImportFile(file);
+                e.target.value = '';
+              }}
+              isDisabled={importing}
+            />
+
+            {importing && (
+              <Text mt="12px" fontSize="sm" color="secondaryGray.600">Importando, aguarde...</Text>
+            )}
+
+            {importResult && !importing && (
+              <Box mt="16px" p="12px" borderRadius="12px" bg="secondaryGray.100">
+                {importResult.failed === -1 ? (
+                  <Text color="red.500" fontSize="sm">Erro ao importar o arquivo. Verifique se é um CSV válido.</Text>
+                ) : importResult.total === 0 ? (
+                  <Text color="orange.500" fontSize="sm">Nenhum lead encontrado no arquivo. Confira os títulos das colunas.</Text>
+                ) : (
+                  <Box fontSize="sm">
+                    <Text color="green.600">✅ {importResult.created} lead(s) criado(s)</Text>
+                    {importResult.skipped > 0 && <Text color="secondaryGray.700">↩️ {importResult.skipped} ignorado(s) (CPF já existia)</Text>}
+                    {importResult.failed > 0 && <Text color="red.500">⚠️ {importResult.failed} com erro (faltou nome ou telefone)</Text>}
+                  </Box>
+                )}
+              </Box>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" onClick={() => setImportOpen(false)} isDisabled={importing}>
+              Fechar
             </Button>
           </ModalFooter>
         </ModalContent>

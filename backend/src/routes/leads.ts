@@ -23,6 +23,9 @@ router.get('/deletion-logs', leadsController.getDeletionLogs);
 // POST /leads - Create new lead
 router.post('/', leadsController.createLead);
 
+// POST /leads/import - Importar varios leads (CSV)
+router.post('/import', leadsController.importLeads);
+
 // GET /leads/:id/activity - Linha do tempo de atividades do lead
 router.get('/:id/activity', leadsController.getLeadActivity);
 
