@@ -118,6 +118,9 @@ export function KanbanPage() {
     }
   };
   const [taskModalCard, setTaskModalCard] = useState<KanbanCardType | null>(null);
+  const [editCard, setEditCard] = useState<KanbanCardType | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', cpf: '', category: 'CONSULTATION' });
+  const [savingEditCard, setSavingEditCard] = useState(false);
   const [leadTasks, setLeadTasks] = useState<LeadTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -288,6 +291,35 @@ export function KanbanPage() {
     } catch (error) {
       console.error('Erro ao remover card:', error);
       alert('Erro ao remover o card. Tente novamente.');
+    }
+  };
+
+  const openEditCard = (card: KanbanCardType) => {
+    setEditForm({
+      name: card.lead?.name || '',
+      phone: card.lead?.phone || '',
+      email: card.lead?.email || '',
+      cpf: card.lead?.cpf || '',
+      category: (card.lead?.category as any) || 'CONSULTATION',
+    });
+    setEditCard(card);
+  };
+
+  const handleSaveEditCard = async () => {
+    if (!editCard) return;
+    try {
+      setSavingEditCard(true);
+      await leadService.update(editCard.leadId, {
+        ...editForm,
+        category: editForm.category as any,
+      });
+      setEditCard(null);
+      await loadKanbanCards();
+    } catch (error) {
+      console.error('Erro ao editar lead do card:', error);
+      alert('Erro ao salvar. Tente novamente.');
+    } finally {
+      setSavingEditCard(false);
     }
   };
 
@@ -727,6 +759,25 @@ export function KanbanPage() {
                               {draggedCard?.id === card.id ? '✓ Selecionado (escolha a coluna)' : '↔ Mover'}
                             </button>
                             <button
+                              title="Editar dados do lead"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEditCard(card);
+                              }}
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                border: `1px solid ${activeColor}`,
+                                borderRadius: '6px',
+                                backgroundColor: designSystem.colors.neutral.white,
+                                color: activeColor,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              ✏️ Editar
+                            </button>
+                            <button
                               title="Remover card do quadro"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -939,6 +990,54 @@ export function KanbanPage() {
       </Modal>
 
       {/* Tasks/Reminders Modal */}
+      {/* Modal: editar dados do lead do card */}
+      <Modal
+        isOpen={!!editCard}
+        onClose={() => !savingEditCard && setEditCard(null)}
+        title="✏️ Editar dados do lead"
+        size="medium"
+        onConfirm={handleSaveEditCard}
+        confirmText={savingEditCard ? 'Salvando...' : 'Salvar'}
+      >
+        {(() => {
+          const fieldStyle: React.CSSProperties = {
+            width: '100%',
+            padding: '10px 12px',
+            border: `1px solid ${designSystem.colors.neutral.gray300}`,
+            borderRadius: '8px',
+            fontSize: '14px',
+            marginBottom: '12px',
+            boxSizing: 'border-box',
+          };
+          const labelStyle: React.CSSProperties = {
+            display: 'block',
+            fontSize: '13px',
+            fontWeight: 600,
+            marginBottom: '4px',
+            color: designSystem.colors.primary.dark,
+          };
+          return (
+            <div>
+              <label style={labelStyle}>Nome</label>
+              <input style={fieldStyle} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+              <label style={labelStyle}>Email</label>
+              <input style={fieldStyle} value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+              <label style={labelStyle}>Telefone</label>
+              <input style={fieldStyle} value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
+              <label style={labelStyle}>CPF</label>
+              <input style={fieldStyle} value={editForm.cpf} onChange={(e) => setEditForm({ ...editForm, cpf: e.target.value })} />
+              <label style={labelStyle}>Categoria</label>
+              <select style={fieldStyle} value={editForm.category} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}>
+                <option value="CONSULTATION">Consulta</option>
+                <option value="PROCESS">Processo</option>
+                <option value="BPC_LOAS">BPC/LOAS</option>
+                <option value="RETIREMENT">Aposentadoria</option>
+              </select>
+            </div>
+          );
+        })()}
+      </Modal>
+
       <Modal
         isOpen={!!taskModalCard}
         onClose={closeTasksModal}
