@@ -63,7 +63,7 @@ import { leadService } from '@/services/leadService';
 import type { Lead } from '@/types';
 import { DEMO_FALLBACK, demoLeads } from '@/utils/demoData';
 import { generateLeadWord, generateLeadPDF } from '@/utils/leadDocuments';
-import { exportLeadsCsv, parseLeadsCsv } from '@/utils/leadCsv';
+import { exportLeadsCsv, parseLeadsCsv, downloadLeadsCsvTemplate } from '@/utils/leadCsv';
 
 const STATUS_META: Record<string, { label: string; colorScheme: string }> = {
   INITIAL: { label: 'Inicial', colorScheme: 'blue' },
@@ -716,6 +716,10 @@ export function LeadsPage() {
               Obrigatórios: <strong>Nome</strong> e <strong>Telefone</strong>. Leads com CPF já
               existente são ignorados (não duplica).
             </Text>
+
+            <Button size="sm" variant="brand" mb="12px" onClick={downloadLeadsCsvTemplate}>
+              ⬇️ Baixar modelo CSV (com exemplo)
+            </Button>
 
             <Input
               type="file"

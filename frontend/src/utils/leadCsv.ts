@@ -48,6 +48,38 @@ export function exportLeadsCsv(leads: Lead[]): void {
   URL.revokeObjectURL(url);
 }
 
+/** Baixa um modelo (template) de CSV com os títulos e uma linha de exemplo. */
+export function downloadLeadsCsvTemplate(): void {
+  const header = EXPORT_COLUMNS.map((c) => c.label).join(';');
+  const example = [
+    'Maria Aparecida Silva',
+    'maria.silva@email.com',
+    '13999998888',
+    '123.456.789-00',
+    'Rua das Flores, 100',
+    'Centro',
+    'Bertioga',
+    'SP',
+    '11250-000',
+    'brasileira',
+    'casada',
+    'aposentada',
+    'RETIREMENT',
+    'INITIAL',
+    'IMPORTACAO',
+  ].map(csvEscape).join(';');
+  const csv = [header, example].join('\r\n');
+  const blob = new Blob(['﻿', csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'modelo_importar_leads.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // Normaliza cabeçalho (minúsculo, sem acento, sem espaços) para mapear colunas
 function normalizeHeader(h: string): string {
   return h
