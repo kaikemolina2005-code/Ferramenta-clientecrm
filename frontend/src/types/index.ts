@@ -30,6 +30,7 @@ export interface Lead {
   nationality?: string;
   maritalStatus?: string;
   profession?: string;
+  notes?: string;
   category: LeadCategory;
   status: LeadStatus;
   source?: string;

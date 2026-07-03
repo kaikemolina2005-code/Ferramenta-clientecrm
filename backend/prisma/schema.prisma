@@ -301,6 +301,7 @@ model Lead {
   nationality     String?
   maritalStatus   String?
   profession      String?
+  notes           String?
 
   category        LeadCategory
   status          LeadStatus  @default(INITIAL)

@@ -139,6 +139,7 @@ async function ensureLeadColumns() {
       'nationality',
       'maritalStatus',
       'profession',
+      'notes',
     ];
     for (const col of columns) {
       await prisma.$executeRawUnsafe(

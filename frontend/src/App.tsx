@@ -4,6 +4,7 @@ import { Layout } from '@/components/Layout'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { LeadsPage } from '@/pages/LeadsPage'
+import { LeadDetailPage } from '@/pages/LeadDetailPage'
 import { KanbanPage } from '@/pages/KanbanPage'
 import { DocumentsPage } from '@/pages/DocumentsPage'
 import { WhatsAppPage } from '@/pages/WhatsAppPage'
@@ -33,6 +34,14 @@ function App() {
             element={
               <Layout>
                 <LeadsPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/leads/:id"
+            element={
+              <Layout>
+                <LeadDetailPage />
               </Layout>
             }
           />

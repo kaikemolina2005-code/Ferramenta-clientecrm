@@ -23,6 +23,9 @@ router.get('/deletion-logs', leadsController.getDeletionLogs);
 // POST /leads - Create new lead
 router.post('/', leadsController.createLead);
 
+// GET /leads/:id/activity - Linha do tempo de atividades do lead
+router.get('/:id/activity', leadsController.getLeadActivity);
+
 // GET /leads/:id - Get lead by ID
 router.get('/:id', leadsController.getLeadById);
 

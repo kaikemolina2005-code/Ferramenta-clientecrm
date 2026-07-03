@@ -191,6 +191,33 @@ export class LeadService {
   }
 
   /**
+   * Atividades (linha do tempo) de um lead específico
+   */
+  async getLeadActivity(leadId: string, limit = 100) {
+    const activities = await prisma.activity.findMany({
+      where: { leadId },
+      include: { user: { select: { id: true, name: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+    return activities.map((a) => {
+      let details: any = null;
+      try {
+        details = a.details ? JSON.parse(a.details) : null;
+      } catch {
+        details = a.details;
+      }
+      return {
+        id: a.id,
+        action: a.action,
+        details,
+        user: a.user ? { name: a.user.name } : null,
+        createdAt: a.createdAt,
+      };
+    });
+  }
+
+  /**
    * Histórico de exclusões de leads (para o ADM revisar)
    */
   async getDeletionLogs(limit = 100) {

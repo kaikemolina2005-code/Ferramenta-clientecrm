@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -99,6 +100,7 @@ const EMPTY_FORM = {
 const columnHelper = createColumnHelper<Lead>();
 
 export function LeadsPage() {
+  const navigate = useNavigate();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState(EMPTY_FORM);
@@ -239,7 +241,13 @@ export function LeadsPage() {
       columnHelper.accessor('name', {
         header: 'Nome',
         cell: (info) => (
-          <Text fontWeight="600" color={cellColor}>
+          <Text
+            fontWeight="600"
+            color="brand.500"
+            cursor="pointer"
+            _hover={{ textDecoration: 'underline' }}
+            onClick={() => navigate(`/leads/${info.row.original.id}`)}
+          >
             {info.getValue()}
           </Text>
         ),

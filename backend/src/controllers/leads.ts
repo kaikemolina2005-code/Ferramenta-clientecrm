@@ -268,6 +268,21 @@ export async function deleteLead(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
+ * GET /leads/:id/activity
+ * Linha do tempo de atividades de um lead
+ */
+export async function getLeadActivity(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const activities = await leadService.getLeadActivity(id);
+    res.json({ success: true, data: activities });
+  } catch (error: any) {
+    console.error('Lead activity error:', error);
+    res.status(500).json({ error: error.message || 'Erro ao obter atividades' });
+  }
+}
+
+/**
  * GET /leads/deletion-logs
  * Histórico de exclusões de leads (quem apagou, quando e por quê)
  */
