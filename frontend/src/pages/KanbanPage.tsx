@@ -57,6 +57,17 @@ function loadRemovedStages(): Record<string, string[]> {
   }
 }
 
+const STAGE_ADDED_STORAGE_KEY = 'kanban_stage_added';
+
+function loadAddedStages(): Record<string, { key: string; name: string; editable?: boolean }[]> {
+  try {
+    const raw = localStorage.getItem(STAGE_ADDED_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
 function getStageKey(card: KanbanCardType, sector: string): string {
   const stages = DEFAULT_STAGES[sector];
   return stages.some((s) => s.key === card.stage) ? card.stage : stages[0].key;
@@ -80,6 +91,7 @@ export function KanbanPage() {
   );
   const [editingStage, setEditingStage] = useState<string | null>(null);
   const [removedStages, setRemovedStages] = useState<Record<string, string[]>>(loadRemovedStages());
+  const [addedStages, setAddedStages] = useState<Record<string, { key: string; name: string; editable?: boolean }[]>>(loadAddedStages());
   const [taskModalCard, setTaskModalCard] = useState<KanbanCardType | null>(null);
   const [leadTasks, setLeadTasks] = useState<LeadTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
@@ -127,6 +139,30 @@ export function KanbanPage() {
     const updated = { ...removedStages, [sector]: [] };
     setRemovedStages(updated);
     localStorage.setItem(STAGE_REMOVED_STORAGE_KEY, JSON.stringify(updated));
+  };
+
+  // Lista completa de colunas do setor: padrão + adicionadas, sem as removidas
+  const getSectorStages = (sector: string): { key: string; name: string; editable?: boolean }[] => {
+    const all = [...DEFAULT_STAGES[sector], ...(addedStages[sector] || [])];
+    return all.filter((s) => !isStageRemoved(sector, s.key));
+  };
+
+  // Retorna a coluna do card considerando colunas padrão E adicionadas
+  const stageKeyOf = (card: KanbanCardType, sector: string): string => {
+    const stages = getSectorStages(sector);
+    return stages.some((s) => s.key === card.stage) ? card.stage : stages[0]?.key || '';
+  };
+
+  const addStage = (sector: string) => {
+    const name = prompt('Nome da nova coluna:');
+    if (!name || !name.trim()) return;
+    const key = `custom_${Date.now()}`;
+    const updated = {
+      ...addedStages,
+      [sector]: [...(addedStages[sector] || []), { key, name: name.trim(), editable: true }],
+    };
+    setAddedStages(updated);
+    localStorage.setItem(STAGE_ADDED_STORAGE_KEY, JSON.stringify(updated));
   };
 
   useEffect(() => {
@@ -450,13 +486,32 @@ export function KanbanPage() {
           </button>
         )}
 
+        <button
+          type="button"
+          onClick={() => addStage(activeSector)}
+          style={{
+            marginBottom: '16px',
+            marginLeft: (removedStages[activeSector] || []).length > 0 ? '8px' : '0',
+            padding: '6px 12px',
+            border: `1px solid ${activeColor}`,
+            borderRadius: '8px',
+            background: activeColor,
+            color: designSystem.colors.neutral.white,
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: '600'
+          }}
+        >
+          ➕ Nova coluna
+        </button>
+
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
           gap: '24px'
         }}>
-          {DEFAULT_STAGES[activeSector].filter((stage) => !isStageRemoved(activeSector, stage.key)).map((stage) => {
-            const stageCards = sectorCards.filter((card) => getStageKey(card, activeSector) === stage.key);
+          {getSectorStages(activeSector).map((stage) => {
+            const stageCards = sectorCards.filter((card) => stageKeyOf(card, activeSector) === stage.key);
             const stageName = getStageName(activeSector, stage.key, stage.name);
             const editId = `${activeSector}:${stage.key}`;
             const isEditing = editingStage === editId;
@@ -552,7 +607,7 @@ export function KanbanPage() {
                 </div>
 
                 {/* Botao "mover para ca" (aparece quando um card esta selecionado - util no celular) */}
-                {draggedCard && getStageKey(draggedCard, activeSector) !== stage.key && (
+                {draggedCard && stageKeyOf(draggedCard, activeSector) !== stage.key && (
                   <button
                     onClick={() => handleDrop(stage.key)}
                     style={{
