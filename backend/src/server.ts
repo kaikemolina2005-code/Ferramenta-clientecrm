@@ -145,7 +145,13 @@ async function ensureLeadColumns() {
         `ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "${col}" TEXT`
       );
     }
-    console.log('✅ Colunas do Lead verificadas/criadas');
+
+    // Tabela genérica de configurações compartilhadas (ex: colunas do CRM)
+    await prisma.$executeRawUnsafe(
+      `CREATE TABLE IF NOT EXISTS "AppSetting" ("key" TEXT PRIMARY KEY, "value" TEXT)`
+    );
+
+    console.log('✅ Colunas do Lead e AppSetting verificadas/criadas');
   } catch (error) {
     console.error('⚠️ Erro ao garantir colunas do Lead:', error);
   }

@@ -8,6 +8,12 @@ const router = Router();
 // Middleware - All routes require authentication
 router.use(authMiddleware);
 
+// GET /kanban/config - Configuração compartilhada das colunas
+router.get('/config', kanbanController.getKanbanConfig);
+
+// PUT /kanban/config - Salvar configuração compartilhada das colunas
+router.put('/config', kanbanController.saveKanbanConfig);
+
 // GET /kanban - Get all cards or by sector
 router.get('/', kanbanController.getKanbanCards);
 

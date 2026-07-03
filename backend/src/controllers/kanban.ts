@@ -2,10 +2,52 @@ import { Request, Response } from 'express';
 import { kanbanService } from '../services/kanbanService.js';
 import { leadService } from '../services/leadService.js';
 import { socketService } from '../socket/service.js';
+import { prisma } from '../services/prisma.js';
 
 interface AuthenticatedRequest extends Request {
   userId?: string;
   user?: any;
+}
+
+const KANBAN_CONFIG_KEY = 'kanban_stages_config';
+
+/**
+ * GET /kanban/config
+ * Configuração compartilhada das colunas do CRM (nomes, adicionadas, removidas)
+ */
+export async function getKanbanConfig(_req: AuthenticatedRequest, res: Response) {
+  try {
+    const rows = await prisma.$queryRawUnsafe<{ value: string }[]>(
+      `SELECT "value" FROM "AppSetting" WHERE "key" = $1`,
+      KANBAN_CONFIG_KEY
+    );
+    const value = rows?.[0]?.value ? JSON.parse(rows[0].value) : {};
+    res.json({ success: true, data: value });
+  } catch (error: any) {
+    console.error('Get kanban config error:', error);
+    res.status(500).json({ error: error.message || 'Erro ao obter configuração' });
+  }
+}
+
+/**
+ * PUT /kanban/config
+ * Salva a configuração compartilhada das colunas do CRM
+ */
+export async function saveKanbanConfig(req: AuthenticatedRequest, res: Response) {
+  try {
+    const config = req.body || {};
+    const value = JSON.stringify(config);
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "AppSetting" ("key", "value") VALUES ($1, $2)
+       ON CONFLICT ("key") DO UPDATE SET "value" = EXCLUDED."value"`,
+      KANBAN_CONFIG_KEY,
+      value
+    );
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Save kanban config error:', error);
+    res.status(500).json({ error: error.message || 'Erro ao salvar configuração' });
+  }
 }
 
 /**

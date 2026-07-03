@@ -69,6 +69,15 @@ export const kanbanService = {
     const response = await api.post(`/kanban/lead/${leadId}`, { sector, stage });
     return response.data.data;
   },
+
+  async getConfig(): Promise<any> {
+    const response = await api.get('/kanban/config');
+    return response.data.data || {};
+  },
+
+  async saveConfig(config: any): Promise<void> {
+    await api.put('/kanban/config', config);
+  },
 };
 
 export const taskService = {

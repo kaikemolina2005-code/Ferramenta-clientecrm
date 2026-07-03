@@ -92,6 +92,31 @@ export function KanbanPage() {
   const [editingStage, setEditingStage] = useState<string | null>(null);
   const [removedStages, setRemovedStages] = useState<Record<string, string[]>>(loadRemovedStages());
   const [addedStages, setAddedStages] = useState<Record<string, { key: string; name: string; editable?: boolean }[]>>(loadAddedStages());
+
+  // Salva a configuração das colunas no servidor (compartilhada entre todos)
+  const persistConfig = (
+    names: Record<string, Record<string, string>>,
+    removed: Record<string, string[]>,
+    added: Record<string, { key: string; name: string; editable?: boolean }[]>
+  ) => {
+    kanbanService.saveConfig({ names, removed, added }).catch((err) => {
+      console.error('Erro ao salvar configuração das colunas:', err);
+    });
+  };
+
+  // Carrega a configuração compartilhada das colunas do servidor
+  const loadStageConfig = async () => {
+    try {
+      const config = await kanbanService.getConfig();
+      if (config && typeof config === 'object') {
+        if (config.names) setStageNameOverrides(config.names);
+        if (config.removed) setRemovedStages(config.removed);
+        if (config.added) setAddedStages(config.added);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar configuração das colunas:', error);
+    }
+  };
   const [taskModalCard, setTaskModalCard] = useState<KanbanCardType | null>(null);
   const [leadTasks, setLeadTasks] = useState<LeadTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
@@ -111,7 +136,7 @@ export function KanbanPage() {
       [sector]: { ...stageNameOverrides[sector], [stageKey]: newName },
     };
     setStageNameOverrides(updated);
-    localStorage.setItem(STAGE_NAMES_STORAGE_KEY, JSON.stringify(updated));
+    persistConfig(updated, removedStages, addedStages);
   };
 
   const isStageRemoved = (sector: string, stageKey: string): boolean => {
@@ -132,13 +157,13 @@ export function KanbanPage() {
       [sector]: [...(removedStages[sector] || []), stageKey],
     };
     setRemovedStages(updated);
-    localStorage.setItem(STAGE_REMOVED_STORAGE_KEY, JSON.stringify(updated));
+    persistConfig(stageNameOverrides, updated, addedStages);
   };
 
   const restoreStages = (sector: string) => {
     const updated = { ...removedStages, [sector]: [] };
     setRemovedStages(updated);
-    localStorage.setItem(STAGE_REMOVED_STORAGE_KEY, JSON.stringify(updated));
+    persistConfig(stageNameOverrides, updated, addedStages);
   };
 
   // Lista completa de colunas do setor: padrão + adicionadas, sem as removidas
@@ -162,11 +187,12 @@ export function KanbanPage() {
       [sector]: [...(addedStages[sector] || []), { key, name: name.trim(), editable: true }],
     };
     setAddedStages(updated);
-    localStorage.setItem(STAGE_ADDED_STORAGE_KEY, JSON.stringify(updated));
+    persistConfig(stageNameOverrides, removedStages, updated);
   };
 
   useEffect(() => {
     loadKanbanCards();
+    loadStageConfig();
   }, []);
 
   const loadKanbanCards = async () => {
