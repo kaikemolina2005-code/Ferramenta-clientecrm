@@ -216,6 +216,19 @@ export function KanbanPage() {
     }
   };
 
+  const handleDeleteCard = async (card: KanbanCardType) => {
+    const name = card.lead?.name || 'este card';
+    if (!confirm(`Remover "${name}" do quadro?\n\n(O lead continua cadastrado na página de Leads — só sai do quadro.)`)) return;
+    try {
+      await kanbanService.deleteCard(card.id);
+      if (draggedCard?.id === card.id) setDraggedCard(null);
+      await loadKanbanCards();
+    } catch (error) {
+      console.error('Erro ao remover card:', error);
+      alert('Erro ao remover o card. Tente novamente.');
+    }
+  };
+
   const openTasksModal = async (card: KanbanCardType) => {
     setTaskModalCard(card);
     setNewTaskTitle('');
@@ -612,26 +625,46 @@ export function KanbanPage() {
                             {card.lead?.name || 'Sem nome'}
                           </h3>
 
-                          {/* Botao mover (selecionar para mover - funciona no celular) */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDraggedCard(draggedCard?.id === card.id ? null : card);
-                            }}
-                            style={{
-                              alignSelf: 'flex-start',
-                              padding: '4px 10px',
-                              fontSize: '12px',
-                              fontWeight: '600',
-                              border: `1px solid ${activeColor}`,
-                              borderRadius: '6px',
-                              backgroundColor: draggedCard?.id === card.id ? activeColor : designSystem.colors.neutral.white,
-                              color: draggedCard?.id === card.id ? designSystem.colors.neutral.white : activeColor,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {draggedCard?.id === card.id ? '✓ Selecionado (escolha a coluna)' : '↔ Mover'}
-                          </button>
+                          {/* Botoes: mover (selecionar) + excluir card */}
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDraggedCard(draggedCard?.id === card.id ? null : card);
+                              }}
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                border: `1px solid ${activeColor}`,
+                                borderRadius: '6px',
+                                backgroundColor: draggedCard?.id === card.id ? activeColor : designSystem.colors.neutral.white,
+                                color: draggedCard?.id === card.id ? designSystem.colors.neutral.white : activeColor,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {draggedCard?.id === card.id ? '✓ Selecionado (escolha a coluna)' : '↔ Mover'}
+                            </button>
+                            <button
+                              title="Remover card do quadro"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCard(card);
+                              }}
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                border: `1px solid ${designSystem.colors.status.error}`,
+                                borderRadius: '6px',
+                                backgroundColor: designSystem.colors.neutral.white,
+                                color: designSystem.colors.status.error,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              🗑️ Excluir
+                            </button>
+                          </div>
 
                           {/* Category Badge */}
                           {card.lead?.category && (
