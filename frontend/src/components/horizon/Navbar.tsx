@@ -109,7 +109,7 @@ export function Navbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
 
           <Menu>
             <MenuButton>
-              <Avatar size="sm" name={user?.name} bg="brand.600" color="white" cursor="pointer" />
+              <Avatar size="sm" src="/logo.png" name={user?.name} bg="brand.600" color="white" cursor="pointer" />
             </MenuButton>
             <MenuList boxShadow={shadow} p="16px" borderRadius="20px" bg={menuBg} border="none" mt="8px">
               <Box px="8px" pb="10px" mb="8px" borderBottomWidth="1px" borderColor="secondaryGray.200">

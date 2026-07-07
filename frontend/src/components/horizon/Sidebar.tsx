@@ -142,7 +142,7 @@ function SidebarContent({ onNavigate, collapsed = false }: { onNavigate?: () => 
         spacing="12px"
         justify={collapsed ? 'center' : 'flex-start'}
       >
-        <Avatar size="sm" name={user?.name} bg="gold.500" color="brand.600" flexShrink={0} />
+        <Avatar size="sm" src="/logo.png" name={user?.name} bg="gold.500" color="brand.600" flexShrink={0} />
         {!collapsed && (
           <>
             <Box flex="1" minW="0">
