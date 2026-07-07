@@ -51,10 +51,10 @@ export function ProfilePage() {
             <Avatar
               size="xl"
               name={user?.name}
-              src={user?.avatar}
+              src={user?.avatar || '/logo.png'}
               border="4px solid white"
-              bg="gold.500"
-              color="brand.600"
+              bg="#000000"
+              color="white"
             />
             <Text fontSize="xl" fontWeight="700" color={titleColor} mt="12px">
               {user?.name || 'Usuário'}
