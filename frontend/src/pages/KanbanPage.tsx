@@ -4,13 +4,40 @@ import { designSystem } from '@/theme/designSystem';
 import { kanbanService, leadService, taskService } from '@/services/leadService';
 import { KanbanCard as KanbanCardType, Lead, LeadTask } from '@/types';
 
-const SECTORS = ['COMMERCIAL', 'LEGAL', 'ADMINISTRATIVE'];
+type SectorInfo = { key: string; name: string; color: string; icon: string };
 
-const sectorNames: Record<string, { name: string; color: string; icon: string }> = {
+// Meta das abas conhecidas (cor/ícone/nome). Abas criadas pelo usuário guardam
+// esses dados na própria configuração salva.
+const BUILTIN_SECTORS: Record<string, { name: string; color: string; icon: string }> = {
   COMMERCIAL: { name: 'Comercial', color: designSystem.colors.primary.dark, icon: '💼' },
   LEGAL: { name: 'Jurídico', color: designSystem.colors.accent.gold, icon: '⚖️' },
   ADMINISTRATIVE: { name: 'Administrativo', color: designSystem.colors.primary.light, icon: '📋' },
 };
+
+// Por padrão o quadro começa apenas com a aba Comercial. Outras abas podem ser
+// adicionadas ou removidas pelo próprio usuário.
+const DEFAULT_SECTORS: SectorInfo[] = [
+  { key: 'COMMERCIAL', name: 'Comercial', color: designSystem.colors.primary.dark, icon: '💼' },
+];
+
+const SECTORS_STORAGE_KEY = 'kanban_sectors';
+
+function loadSectors(): SectorInfo[] {
+  try {
+    const raw = localStorage.getItem(SECTORS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_SECTORS;
+  } catch {
+    return DEFAULT_SECTORS;
+  }
+}
+
+// Etapas genéricas para abas criadas pelo usuário (sem etapas padrão definidas).
+const GENERIC_STAGES: { key: string; name: string; editable?: boolean }[] = [
+  { key: 'inicio', name: 'Início' },
+  { key: 'andamento', name: 'Em andamento', editable: true },
+  { key: 'concluido', name: 'Concluído', editable: true },
+];
 
 // Etapas padrão de cada Kanban, conforme briefing do cliente.
 // As etapas marcadas como "editável" podem ser renomeadas pelo usuário.
@@ -74,12 +101,9 @@ function getStageKey(card: KanbanCardType, sector: string): string {
 }
 
 export function KanbanPage() {
-  const [activeSector, setActiveSector] = useState<string>('COMMERCIAL');
-  const [cards, setCards] = useState<Record<string, KanbanCardType[]>>({
-    COMMERCIAL: [],
-    LEGAL: [],
-    ADMINISTRATIVE: [],
-  });
+  const [sectors, setSectors] = useState<SectorInfo[]>(loadSectors());
+  const [activeSector, setActiveSector] = useState<string>(loadSectors()[0].key);
+  const [cards, setCards] = useState<Record<string, KanbanCardType[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [draggedCard, setDraggedCard] = useState<KanbanCardType | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -93,13 +117,20 @@ export function KanbanPage() {
   const [removedStages, setRemovedStages] = useState<Record<string, string[]>>(loadRemovedStages());
   const [addedStages, setAddedStages] = useState<Record<string, { key: string; name: string; editable?: boolean }[]>>(loadAddedStages());
 
-  // Salva a configuração das colunas no servidor (compartilhada entre todos)
+  // Salva a configuração das colunas/abas no servidor (compartilhada entre todos)
+  // e também no navegador como backup.
   const persistConfig = (
     names: Record<string, Record<string, string>>,
     removed: Record<string, string[]>,
-    added: Record<string, { key: string; name: string; editable?: boolean }[]>
+    added: Record<string, { key: string; name: string; editable?: boolean }[]>,
+    sectorsList: SectorInfo[] = sectors
   ) => {
-    kanbanService.saveConfig({ names, removed, added }).catch((err) => {
+    try {
+      localStorage.setItem(SECTORS_STORAGE_KEY, JSON.stringify(sectorsList));
+    } catch {
+      /* ignore */
+    }
+    kanbanService.saveConfig({ names, removed, added, sectors: sectorsList } as any).catch((err) => {
       console.error('Erro ao salvar configuração das colunas:', err);
     });
   };
@@ -112,6 +143,11 @@ export function KanbanPage() {
         if (config.names) setStageNameOverrides(config.names);
         if (config.removed) setRemovedStages(config.removed);
         if (config.added) setAddedStages(config.added);
+        const cfgSectors = (config as any).sectors;
+        if (Array.isArray(cfgSectors) && cfgSectors.length > 0) {
+          setSectors(cfgSectors);
+          setActiveSector((cur) => cfgSectors.some((s: SectorInfo) => s.key === cur) ? cur : cfgSectors[0].key);
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar configuração das colunas:', error);
@@ -171,8 +207,46 @@ export function KanbanPage() {
 
   // Lista completa de colunas do setor: padrão + adicionadas, sem as removidas
   const getSectorStages = (sector: string): { key: string; name: string; editable?: boolean }[] => {
-    const all = [...DEFAULT_STAGES[sector], ...(addedStages[sector] || [])];
+    const base = DEFAULT_STAGES[sector] || GENERIC_STAGES;
+    const all = [...base, ...(addedStages[sector] || [])];
     return all.filter((s) => !isStageRemoved(sector, s.key));
+  };
+
+  const getSectorInfo = (sector: string): SectorInfo => {
+    return (
+      sectors.find((s) => s.key === sector) ||
+      (BUILTIN_SECTORS[sector] && { key: sector, ...BUILTIN_SECTORS[sector] }) ||
+      { key: sector, name: sector, color: designSystem.colors.primary.dark, icon: '📁' }
+    );
+  };
+
+  // Cria uma nova aba (setor) no quadro.
+  const addSector = () => {
+    const name = prompt('Nome da nova aba (ex.: Financeiro, Pós-venda):');
+    if (!name || !name.trim()) return;
+    const key = `sector_${Date.now()}`;
+    const updated = [...sectors, { key, name: name.trim(), color: designSystem.colors.primary.dark, icon: '📁' }];
+    setSectors(updated);
+    setActiveSector(key);
+    persistConfig(stageNameOverrides, removedStages, addedStages, updated);
+  };
+
+  // Remove uma aba (setor) do quadro. Não permite remover a última.
+  const removeSector = (sector: string) => {
+    if (sectors.length <= 1) {
+      alert('É preciso manter pelo menos uma aba no quadro.');
+      return;
+    }
+    const info = getSectorInfo(sector);
+    const count = (cards[sector] || []).length;
+    const extra = count > 0
+      ? `\n\nOs ${count} card(s) desta aba deixarão de aparecer no quadro (os leads continuam cadastrados).`
+      : '';
+    if (!confirm(`Remover a aba "${info.name}"?${extra}`)) return;
+    const updated = sectors.filter((s) => s.key !== sector);
+    setSectors(updated);
+    setActiveSector((cur) => (cur === sector ? updated[0].key : cur));
+    persistConfig(stageNameOverrides, removedStages, addedStages, updated);
   };
 
   // Retorna a coluna do card considerando colunas padrão E adicionadas
@@ -203,17 +277,12 @@ export function KanbanPage() {
       setIsLoading(true);
       const allCards = await kanbanService.getCards();
 
-      // Organizar cards por setor
-      const organizedCards: Record<string, KanbanCardType[]> = {
-        COMMERCIAL: [],
-        LEGAL: [],
-        ADMINISTRATIVE: [],
-      };
+      // Organizar cards por setor (agrupa qualquer setor que vier do backend)
+      const organizedCards: Record<string, KanbanCardType[]> = {};
 
       allCards.forEach((card: any) => {
-        if (organizedCards[card.sector]) {
-          organizedCards[card.sector].push(card);
-        }
+        if (!organizedCards[card.sector]) organizedCards[card.sector] = [];
+        organizedCards[card.sector].push(card);
       });
 
       setCards(organizedCards);
@@ -272,7 +341,7 @@ export function KanbanPage() {
 
   const handleAddCard = async (leadId: string) => {
     try {
-      const firstStage = DEFAULT_STAGES[activeSector][0].key;
+      const firstStage = getSectorStages(activeSector)[0].key;
       await kanbanService.createCardFromLead(leadId, activeSector, firstStage);
       setShowAddModal(false);
       await loadKanbanCards();
@@ -424,6 +493,11 @@ export function KanbanPage() {
     );
   }
 
+  // Mapa de meta das abas para acesso por chave no render.
+  const sectorNames: Record<string, SectorInfo> = {};
+  sectors.forEach((s) => { sectorNames[s.key] = getSectorInfo(s.key); });
+  if (!sectorNames[activeSector]) sectorNames[activeSector] = getSectorInfo(activeSector);
+
   const activeColor = sectorNames[activeSector].color;
   const sectorCards = cards[activeSector] || [];
 
@@ -479,17 +553,21 @@ export function KanbanPage() {
         </div>
       </div>
 
-      {/* Sector Tabs - cada setor é um kanban isolado */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
-        {SECTORS.map((sector) => {
+      {/* Sector Tabs - cada setor é um kanban isolado. Abas podem ser adicionadas/removidas. */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap', alignItems: 'center' }}>
+        {sectors.map((s) => {
+          const sector = s.key;
           const isActive = sector === activeSector;
           const sectorInfo = sectorNames[sector];
           return (
-            <button
+            <div
               key={sector}
               onClick={() => setActiveSector(sector)}
               style={{
-                padding: '12px 24px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 16px 12px 24px',
                 borderRadius: '8px 8px 0 0',
                 border: `2px solid ${sectorInfo.color}`,
                 borderBottom: isActive ? `2px solid ${sectorInfo.color}` : 'none',
@@ -501,10 +579,38 @@ export function KanbanPage() {
                 transition: designSystem.transitions.normal
               }}
             >
-              {sectorInfo.icon} {sectorInfo.name} ({(cards[sector] || []).length})
-            </button>
+              <span>{sectorInfo.icon} {sectorInfo.name} ({(cards[sector] || []).length})</span>
+              {sectors.length > 1 && (
+                <span
+                  role="button"
+                  title="Remover esta aba"
+                  onClick={(e) => { e.stopPropagation(); removeSector(sector); }}
+                  style={{ fontSize: '16px', lineHeight: 1, fontWeight: '700', opacity: 0.75, padding: '0 2px' }}
+                >
+                  ×
+                </span>
+              )}
+            </div>
           );
         })}
+        <button
+          type="button"
+          onClick={addSector}
+          title="Adicionar nova aba"
+          style={{
+            padding: '10px 18px',
+            borderRadius: '8px 8px 0 0',
+            border: `2px dashed ${designSystem.colors.neutral.gray400}`,
+            borderBottom: 'none',
+            backgroundColor: designSystem.colors.neutral.white,
+            color: designSystem.colors.primary.dark,
+            fontWeight: '700',
+            fontSize: '14px',
+            cursor: 'pointer'
+          }}
+        >
+          ➕ Nova aba
+        </button>
       </div>
 
       {/* Board do setor ativo - kanban isolado com 3 colunas (estágios) */}
@@ -897,7 +1003,7 @@ export function KanbanPage() {
           color: designSystem.colors.primary.dark,
           margin: 0
         }}>
-          💡 <strong>Dica:</strong> Cada aba (Comercial, Jurídico, Administrativo) é um CRM isolado com suas próprias etapas. Mova os cards entre as colunas (arrastando no PC ou pelo botão "Mover" no celular). Colunas com ✏️ podem ter o nome alterado clicando no título, e o 🗑️ exclui a coluna (se estiver vazia).
+          💡 <strong>Dica:</strong> Cada aba é um CRM isolado com suas próprias etapas. Use “➕ Nova aba” para criar outras abas e o “×” na aba para removê-la. Mova os cards entre as colunas (arrastando no PC ou pelo botão "Mover" no celular). Colunas com ✏️ podem ter o nome alterado clicando no título, e o 🗑️ exclui a coluna (se estiver vazia).
         </p>
       </div>
 
