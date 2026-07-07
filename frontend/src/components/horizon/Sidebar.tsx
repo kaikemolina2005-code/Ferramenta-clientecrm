@@ -74,24 +74,20 @@ function SidebarContent({ onNavigate, collapsed = false }: { onNavigate?: () => 
         borderColor={borderCol}
         justify={collapsed ? 'center' : 'flex-start'}
       >
-        <Flex
-          align="center"
-          justify="center"
-          w="40px"
-          h="40px"
+        <Box
+          as="img"
+          src="/logo.png"
+          alt="Diego Patrício Advogado"
+          h={collapsed ? '44px' : '64px'}
+          w="auto"
           flexShrink={0}
           borderRadius="12px"
-          bgGradient="linear(135deg, brand.600, brand.500)"
-          color="white"
-          fontWeight="bold"
-          fontSize="sm"
-        >
-          AD
-        </Flex>
+          objectFit="contain"
+        />
         {!collapsed && (
           <Box overflow="hidden" whiteSpace="nowrap">
             <Text fontSize="md" fontWeight="bold" color={brandText} lineHeight="1.1">
-              ADVGD CRM
+              CRM
             </Text>
             <Text fontSize="xs" color="gold.600" lineHeight="1.1">
               Diego Patrício

@@ -118,40 +118,20 @@ export const ADVGDLogoDiego: React.FC<LogoProps> = ({
   size = 'medium',
   className = '',
 }) => {
-  const textSize = {
-    small: 14,
-    medium: 18,
-    large: 24,
-    xlarge: 32,
+  const imgSize = {
+    small: 120,
+    medium: 170,
+    large: 220,
+    xlarge: 280,
   }[size];
 
   return (
-    <div className={`flex flex-col items-center gap-2 ${className}`}>
-      <ADVGDLogo size={size} variant="icon" showText={false} />
-      <div className="text-center">
-        <h1
-          style={{
-            fontSize: `${textSize}px`,
-            fontWeight: 'bold',
-            color: '#003f7f',
-            margin: 0,
-            letterSpacing: '1px',
-          }}
-        >
-          DIEGO PATRÍCIO
-        </h1>
-        <p
-          style={{
-            fontSize: `${textSize * 0.5}px`,
-            color: '#c9a961',
-            margin: '2px 0 0 0',
-            letterSpacing: '2px',
-            fontWeight: '500',
-          }}
-        >
-          ADVOGADO
-        </p>
-      </div>
+    <div className={`flex flex-col items-center ${className}`}>
+      <img
+        src="/logo.png"
+        alt="Diego Patrício Advogado"
+        style={{ width: `${imgSize}px`, height: 'auto', borderRadius: '12px' }}
+      />
     </div>
   );
 };
