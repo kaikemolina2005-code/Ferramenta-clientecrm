@@ -76,7 +76,7 @@ function SidebarContent({ onNavigate, collapsed = false }: { onNavigate?: () => 
       >
         <Box
           as="img"
-          src="/logo.png"
+          src="/logo-icon.png"
           alt="Diego Patrício Advogado"
           h={collapsed ? '44px' : '64px'}
           w="auto"
@@ -142,7 +142,7 @@ function SidebarContent({ onNavigate, collapsed = false }: { onNavigate?: () => 
         spacing="12px"
         justify={collapsed ? 'center' : 'flex-start'}
       >
-        <Avatar size="sm" src="/logo.png" name={user?.name} bg="gold.500" color="brand.600" flexShrink={0} />
+        <Avatar size="sm" src="/logo-icon.png" name={user?.name} bg="brand.600" color="white" flexShrink={0} />
         {!collapsed && (
           <>
             <Box flex="1" minW="0">
