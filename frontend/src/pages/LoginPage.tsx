@@ -50,7 +50,7 @@ export function LoginPage() {
       align="center"
       justify="center"
       p="16px"
-      bgGradient="linear(135deg, #003f7f 0%, #0d47a1 100%)"
+      bgGradient="linear(135deg, #000000 0%, #0a0a0a 100%)"
     >
       <Box w="100%" maxW="420px" bg="white" borderRadius="20px" p="32px" boxShadow="2xl">
         <Flex justify="center" mb="24px">
