@@ -670,9 +670,13 @@ export function KanbanPage() {
         </button>
 
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '24px'
+          display: 'flex',
+          gap: '24px',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          paddingBottom: '12px',
+          WebkitOverflowScrolling: 'touch',
+          scrollSnapType: 'x proximity'
         }}>
           {getSectorStages(activeSector).map((stage) => {
             const stageCards = sectorCards.filter((card) => stageKeyOf(card, activeSector) === stage.key);
@@ -689,7 +693,10 @@ export function KanbanPage() {
                   backgroundColor: designSystem.colors.neutral.light,
                   borderRadius: '12px',
                   padding: '16px',
-                  minHeight: '500px'
+                  minHeight: '500px',
+                  flex: '0 0 300px',
+                  maxWidth: '90vw',
+                  scrollSnapAlign: 'start'
                 }}
               >
                 {/* Column Header */}
