@@ -302,6 +302,8 @@ model Lead {
   maritalStatus   String?
   profession      String?
   notes           String?
+  processNumber   String?    // Número do processo
+  assistantName   String?    // Nome do assistente responsável
 
   category        LeadCategory
   status          LeadStatus  @default(INITIAL)

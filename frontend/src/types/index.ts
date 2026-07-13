@@ -31,6 +31,8 @@ export interface Lead {
   maritalStatus?: string;
   profession?: string;
   notes?: string;
+  processNumber?: string;
+  assistantName?: string;
   category: LeadCategory;
   status: LeadStatus;
   source?: string;

@@ -155,7 +155,7 @@ export function KanbanPage() {
   };
   const [taskModalCard, setTaskModalCard] = useState<KanbanCardType | null>(null);
   const [editCard, setEditCard] = useState<KanbanCardType | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', cpf: '', category: 'CONSULTATION' });
+  const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', cpf: '', category: 'CONSULTATION', processNumber: '', assistantName: '' });
   const [savingEditCard, setSavingEditCard] = useState(false);
   const [leadTasks, setLeadTasks] = useState<LeadTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
@@ -370,6 +370,8 @@ export function KanbanPage() {
       email: card.lead?.email || '',
       cpf: card.lead?.cpf || '',
       category: (card.lead?.category as any) || 'CONSULTATION',
+      processNumber: card.lead?.processNumber || '',
+      assistantName: card.lead?.assistantName || '',
     });
     setEditCard(card);
   };
@@ -932,6 +934,12 @@ export function KanbanPage() {
                             <div style={{ fontSize: '12px', color: designSystem.colors.neutral.gray600, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                               <p>📧 {card.lead.email}</p>
                               <p>📱 {card.lead.phone}</p>
+                              {card.lead.processNumber && (
+                                <p style={{ fontWeight: 600, color: designSystem.colors.primary.dark }}>⚖️ Processo: {card.lead.processNumber}</p>
+                              )}
+                              {card.lead.assistantName && (
+                                <p>👤 Assistente: {card.lead.assistantName}</p>
+                              )}
                             </div>
                           )}
 
@@ -1146,6 +1154,10 @@ export function KanbanPage() {
                 <option value="BPC_LOAS">BPC/LOAS</option>
                 <option value="RETIREMENT">Aposentadoria</option>
               </select>
+              <label style={labelStyle}>Número do processo</label>
+              <input style={fieldStyle} value={editForm.processNumber} placeholder="Ex: 0001234-56.2024.8.26.0100" onChange={(e) => setEditForm({ ...editForm, processNumber: e.target.value })} />
+              <label style={labelStyle}>Nome do assistente</label>
+              <input style={fieldStyle} value={editForm.assistantName} placeholder="Ex: Ana Paula" onChange={(e) => setEditForm({ ...editForm, assistantName: e.target.value })} />
             </div>
           );
         })()}
