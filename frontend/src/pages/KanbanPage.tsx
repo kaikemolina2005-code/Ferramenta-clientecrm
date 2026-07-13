@@ -109,6 +109,7 @@ export function KanbanPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [availableLeads, setAvailableLeads] = useState<Lead[]>([]);
   const [leadsLoading, setLeadsLoading] = useState(false);
+  const [addingAll, setAddingAll] = useState(false);
   const [leadSearch, setLeadSearch] = useState('');
   const [stageNameOverrides, setStageNameOverrides] = useState<Record<string, Record<string, string>>>(
     loadStageNameOverrides()
@@ -347,6 +348,32 @@ export function KanbanPage() {
       await loadKanbanCards();
     } catch (error) {
       console.error('Erro ao adicionar card:', error);
+      alert('Erro ao adicionar o lead ao quadro. Tente novamente.');
+    }
+  };
+
+  // Adiciona TODOS os leads disponíveis (sem card) à primeira coluna da aba ativa
+  const handleAddAllLeads = async () => {
+    if (availableLeads.length === 0 || addingAll) return;
+    const info = getSectorInfo(activeSector);
+    if (!confirm(`Adicionar todos os ${availableLeads.length} leads à aba "${info.name}"?`)) return;
+    try {
+      setAddingAll(true);
+      const firstStage = getSectorStages(activeSector)[0].key;
+      let failed = 0;
+      for (const lead of availableLeads) {
+        try {
+          await kanbanService.createCardFromLead(lead.id, activeSector, firstStage);
+        } catch (error) {
+          failed++;
+          console.error(`Erro ao adicionar lead ${lead.name}:`, error);
+        }
+      }
+      setShowAddModal(false);
+      await loadKanbanCards();
+      if (failed > 0) alert(`${failed} lead(s) não puderam ser adicionados. Tente novamente.`);
+    } finally {
+      setAddingAll(false);
     }
   };
 
@@ -1044,6 +1071,28 @@ export function KanbanPage() {
             boxSizing: 'border-box'
           }}
         />
+
+        {!leadsLoading && availableLeads.length > 0 && (
+          <button
+            onClick={handleAddAllLeads}
+            disabled={addingAll}
+            style={{
+              width: '100%',
+              padding: '10px 16px',
+              marginBottom: '12px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: designSystem.colors.primary.dark,
+              color: designSystem.colors.neutral.white,
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: addingAll ? 'wait' : 'pointer',
+              opacity: addingAll ? 0.7 : 1
+            }}
+          >
+            {addingAll ? 'Adicionando leads...' : `➕ Adicionar todos (${availableLeads.length})`}
+          </button>
+        )}
 
         {leadsLoading ? (
           <p style={{ textAlign: 'center', color: designSystem.colors.neutral.gray500 }}>
