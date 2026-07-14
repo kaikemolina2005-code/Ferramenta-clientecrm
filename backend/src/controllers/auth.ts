@@ -39,11 +39,20 @@ export async function login(req: Request, res: Response) {
  */
 export async function register(req: Request, res: Response) {
   try {
-    const { email, password, name, role } = req.body;
+    const { email, password, name, role, inviteCode } = req.body;
 
     if (!email || !password || !name) {
       return res.status(400).json({
         error: 'Email, password e name são obrigatórios',
+      });
+    }
+
+    // Código de convite: só é exigido se estiver configurado no servidor
+    // (variável de ambiente SIGNUP_INVITE_CODE). Sem ele, o cadastro fica aberto.
+    const requiredInviteCode = (process.env.SIGNUP_INVITE_CODE || '').trim();
+    if (requiredInviteCode && (inviteCode || '').trim() !== requiredInviteCode) {
+      return res.status(403).json({
+        error: 'Código de convite inválido. Peça o código ao administrador do escritório.',
       });
     }
 

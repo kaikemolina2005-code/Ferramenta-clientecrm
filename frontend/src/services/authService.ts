@@ -10,6 +10,7 @@ interface RegisterPayload {
   name: string;
   email: string;
   password: string;
+  inviteCode?: string;
 }
 
 interface AuthResponse {

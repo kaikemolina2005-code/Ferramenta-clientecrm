@@ -29,6 +29,7 @@ export function LoginPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -41,6 +42,7 @@ export function LoginPage() {
     setName('');
     setEmail('');
     setPassword('');
+    setInviteCode('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,7 +57,7 @@ export function LoginPage() {
           setLoading(false);
           return;
         }
-        await register(name.trim(), email.trim(), password);
+        await register(name.trim(), email.trim(), password, inviteCode.trim());
       } else {
         await login(email.trim(), password);
       }
@@ -140,6 +142,24 @@ export function LoginPage() {
               </InputRightElement>
             </InputGroup>
           </FormControl>
+
+          {isSignup && (
+            <FormControl mb="16px">
+              <FormLabel fontSize="sm" color="brand.600">
+                Código de convite
+              </FormLabel>
+              <Input
+                type="text"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                placeholder="Código fornecido pelo escritório"
+                borderRadius="12px"
+              />
+              <Text fontSize="xs" color="secondaryGray.600" mt="4px">
+                Peça o código ao administrador do escritório.
+              </Text>
+            </FormControl>
+          )}
 
           {error && (
             <Alert status="error" borderRadius="12px" mb="16px" fontSize="sm">
