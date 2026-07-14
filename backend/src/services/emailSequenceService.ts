@@ -1,4 +1,3 @@
-import { PrismaClient } from '@prisma/client';
 import { emailService } from './emailService.js';
 import { 
   SequenceTrigger, 

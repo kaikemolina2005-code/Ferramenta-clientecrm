@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { aiService } from '../services/aiService.js';
 import { socketService } from '../socket/service.js';
-import { PrismaClient } from '@prisma/client';
 
 import { prisma } from '../services/prisma.js';
 

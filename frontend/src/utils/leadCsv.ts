@@ -148,7 +148,7 @@ function splitCsvLine(line: string, delimiter: string): string[] {
  * Detecta automaticamente se o separador é ";" ou ",".
  */
 export function parseLeadsCsv(text: string): any[] {
-  const clean = text.replace(/^﻿/, '');
+  const clean = text.replace(/^﻿/, ''); // remove BOM, se presente
   const lines = clean.split(/\r?\n/).filter((l) => l.trim().length > 0);
   if (lines.length < 2) return [];
 

@@ -1,4 +1,3 @@
-import { PrismaClient } from '@prisma/client';
 
 import { prisma } from './prisma.js';
 
@@ -36,7 +35,7 @@ class LeadScoringService {
         throw new Error('Lead não encontrado');
       }
 
-      let factors: ScoringFactors = {
+      const factors: ScoringFactors = {
         baseScore: 10,
         categoryScore: 0,
         sourceScore: 0,

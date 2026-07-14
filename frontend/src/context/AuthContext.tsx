@@ -37,12 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    try {
-      const { user: userData } = await authService.login({ email, password });
-      setUser(userData);
-    } catch (error) {
-      throw error;
-    }
+    const { user: userData } = await authService.login({ email, password });
+    setUser(userData);
   };
 
   const logout = async () => {

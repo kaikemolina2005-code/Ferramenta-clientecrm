@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { PrismaClient } from '@prisma/client';
 
 import { prisma } from './prisma.js';
 

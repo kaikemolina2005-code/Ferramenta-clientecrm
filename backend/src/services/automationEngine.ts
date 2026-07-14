@@ -1,4 +1,4 @@
-import { PrismaClient, AutomationTrigger, AutomationAction } from '@prisma/client';
+import { AutomationTrigger, AutomationAction } from '@prisma/client';
 import { leadScoringService } from './leadScoringService.js';
 import { autoAssignmentService } from './autoAssignmentService.js';
 import { emailSequenceService } from './emailSequenceService.js';

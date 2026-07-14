@@ -114,8 +114,8 @@ export class AIService {
       const detectedType = documentType || this.detectDocumentType(fileName, extension);
 
       // Preparar sistema de prompt baseado no tipo
-      let systemPrompt = this.getSystemPrompt(detectedType);
-      let userPrompt = this.getUserPrompt(fileContent, detectedType);
+      const systemPrompt = this.getSystemPrompt(detectedType);
+      const userPrompt = this.getUserPrompt(fileContent, detectedType);
 
       // Chamar Groq
       const content = await this.generate(systemPrompt, userPrompt);

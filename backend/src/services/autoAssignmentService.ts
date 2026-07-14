@@ -1,4 +1,4 @@
-import { PrismaClient, KanbanSector } from '@prisma/client';
+import { KanbanSector } from '@prisma/client';
 
 import { prisma } from './prisma.js';
 

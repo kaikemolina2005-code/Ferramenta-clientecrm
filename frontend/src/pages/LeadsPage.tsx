@@ -347,7 +347,6 @@ export function LeadsPage() {
         ),
       }),
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [leads, cellColor, subCellColor],
   );
 

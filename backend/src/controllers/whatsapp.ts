@@ -5,7 +5,6 @@ import { socketService } from '../socket/service.js';
 import { aiService } from '../services/aiService.js';
 import { oneDriveService } from '../services/oneDriveService.js';
 import { downloadWhatsAppMedia, sendWhatsAppText, mimeToExt, mimeToLabel } from '../services/whatsappMediaService.js';
-import { PrismaClient } from '@prisma/client';
 
 import { prisma } from '../services/prisma.js';
 
@@ -303,7 +302,7 @@ export const getMessageLogs = async (req: Request, res: Response): Promise<void>
   try {
     const { leadId, limit = '20' } = req.query;
 
-    let whereClause: any = {
+    const whereClause: any = {
       action: 'whatsapp_message_received',
     };
 

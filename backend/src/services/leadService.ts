@@ -1,4 +1,3 @@
-import { PrismaClient } from '@prisma/client';
 import { Lead, LeadStatus, LeadCategory } from '@prisma/client';
 
 import { prisma } from './prisma.js';

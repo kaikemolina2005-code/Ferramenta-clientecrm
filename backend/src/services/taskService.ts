@@ -1,4 +1,4 @@
-import { PrismaClient, LeadTask } from '@prisma/client';
+import { LeadTask } from '@prisma/client';
 
 import { prisma } from './prisma.js';
 
