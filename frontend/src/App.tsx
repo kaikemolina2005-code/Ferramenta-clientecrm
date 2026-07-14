@@ -9,6 +9,7 @@ import { LoginPage } from '@/pages/LoginPage'
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
 const LeadsPage = lazy(() => import('@/pages/LeadsPage').then((m) => ({ default: m.LeadsPage })))
 const LeadDetailPage = lazy(() => import('@/pages/LeadDetailPage').then((m) => ({ default: m.LeadDetailPage })))
+const DocumentsPage = lazy(() => import('@/pages/DocumentsPage').then((m) => ({ default: m.DocumentsPage })))
 const KanbanPage = lazy(() => import('@/pages/KanbanPage').then((m) => ({ default: m.KanbanPage })))
 const WhatsAppPage = lazy(() => import('@/pages/WhatsAppPage').then((m) => ({ default: m.WhatsAppPage })))
 const AIPage = lazy(() => import('@/pages/AIPage').then((m) => ({ default: m.AIPage })))
@@ -73,6 +74,14 @@ function App() {
               element={
                 <Layout>
                   <KanbanPage />
+                </Layout>
+              }
+            />
+            <Route
+              path="/documentos"
+              element={
+                <Layout>
+                  <DocumentsPage />
                 </Layout>
               }
             />

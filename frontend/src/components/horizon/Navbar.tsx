@@ -25,6 +25,7 @@ const PAGE_NAMES: Record<string, string> = {
   '/tarefas': 'Tarefas',
   '/automation': 'Automações',
   '/reports': 'Relatórios',
+  '/documentos': 'Documentos',
   '/whatsapp': 'WhatsApp',
   '/ai': 'IA Documents',
   '/perfil': 'Perfil',

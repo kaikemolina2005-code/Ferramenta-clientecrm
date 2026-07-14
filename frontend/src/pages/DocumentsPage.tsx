@@ -1,221 +1,134 @@
-import { useState, useEffect } from 'react';
-import { Document as DocumentType } from '@/types';
-import { documentService } from '@/services/documentService';
-import { GlassCard } from '@/components/Common';
+import { useEffect, useMemo, useState } from 'react';
+import { designSystem } from '@/theme/designSystem';
+import { leadService } from '@/services/leadService';
+import { generateLeadWord, generateLeadPDF } from '@/utils/leadDocuments';
+import type { Lead } from '@/types';
+
+const CATEGORY_LABELS: Record<string, string> = {
+  CONSULTATION: 'Consulta',
+  PROCESS: 'Processo',
+  BPC_LOAS: 'BPC/LOAS',
+  RETIREMENT: 'Aposentadoria',
+};
 
 export function DocumentsPage() {
-  const [documents, setDocuments] = useState<DocumentType[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
-    loadDocuments();
+    loadLeads();
   }, []);
 
-  const loadDocuments = async () => {
+  const loadLeads = async () => {
     try {
-      setIsLoading(true);
-      // Nota: Será implementado com seleção de lead
-      // const docs = await documentService.getLeadDocuments(leadId);
-      // setDocuments(docs);
+      setLoading(true);
+      const { leads } = await leadService.getAll(1, 500);
+      setLeads(leads);
     } catch (error) {
-      console.error('Erro ao carregar documentos:', error);
+      console.error('Erro ao carregar leads:', error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validar tamanho (máx 4MB)
-      if (file.size > 4 * 1024 * 1024) {
-        alert('Arquivo muito grande. Máximo 4MB');
-        return;
-      }
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return leads;
+    return leads.filter(
+      (l) =>
+        l.name.toLowerCase().includes(q) ||
+        (l.cpf || '').toLowerCase().includes(q) ||
+        (l.phone || '').toLowerCase().includes(q)
+    );
+  }, [leads, search]);
 
-      // Validar tipo
-      const allowedTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'image/jpeg',
-        'image/png',
-      ];
-
-      if (!allowedTypes.includes(file.type)) {
-        alert('Tipo de arquivo não permitido');
-        return;
-      }
-
-      setSelectedFile(file);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile) return;
-
-    try {
-      setIsLoading(true);
-      setUploadProgress(0);
-
-      // Simular progresso
-      const progressInterval = setInterval(() => {
-        setUploadProgress((prev) => Math.min(prev + 10, 90));
-      }, 200);
-
-      // Upload será implementado com seleção de lead
-      // await documentService.uploadDocument(leadId, selectedFile);
-
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
-      setSelectedFile(null);
-      await loadDocuments();
-
-      setTimeout(() => setUploadProgress(0), 1000);
-    } catch (error) {
-      console.error('Erro ao fazer upload:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDelete = async (documentId: string) => {
-    if (window.confirm('Tem certeza que deseja deletar este documento?')) {
-      try {
-        await documentService.deleteDocument(documentId);
-        setDocuments(documents.filter((doc) => doc.id !== documentId));
-      } catch (error) {
-        console.error('Erro ao deletar documento:', error);
-      }
-    }
-  };
-
-  const handleDownload = async (documentId: string) => {
-    try {
-      await documentService.downloadDocument(documentId);
-    } catch (error) {
-      console.error('Erro ao baixar documento:', error);
-    }
-  };
+  const btnStyle = (bg: string): React.CSSProperties => ({
+    padding: '8px 14px',
+    borderRadius: '8px',
+    border: 'none',
+    backgroundColor: bg,
+    color: '#fff',
+    fontSize: '13px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-dark-blue font-poppins">Documentos</h1>
-      </div>
+    <div>
+      <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: designSystem.colors.primary.dark, marginBottom: '4px' }}>
+        📄 Documentos
+      </h1>
+      <p style={{ color: designSystem.colors.neutral.gray600, marginBottom: '20px', fontSize: '14px' }}>
+        Escolha um cliente e gere Contrato, Procuração e Declaração já preenchidos com os dados dele.
+      </p>
 
-      {/* Upload Area */}
-      <GlassCard className="p-6">
-        <h2 className="text-xl font-bold text-dark-blue mb-4">📤 Upload de Documento</h2>
+      {/* Busca */}
+      <input
+        type="text"
+        placeholder="Buscar cliente por nome, CPF ou telefone..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{
+          width: '100%',
+          maxWidth: '480px',
+          padding: '12px 16px',
+          borderRadius: '10px',
+          border: `1px solid ${designSystem.colors.neutral.gray300}`,
+          fontSize: '14px',
+          marginBottom: '20px',
+          boxSizing: 'border-box',
+        }}
+      />
 
-        <div className="space-y-4">
-          <div className="border-2 border-dashed border-dark-blue rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors">
-            <label htmlFor="file-input" className="cursor-pointer block">
-              <p className="text-lg font-semibold text-dark-blue">Selecione um arquivo</p>
-              <p className="text-sm text-gray-600 mt-1">PDF, DOC, DOCX, JPG ou PNG (máx 4MB)</p>
-              <input
-                id="file-input"
-                type="file"
-                onChange={handleFileChange}
-                className="hidden"
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-              />
-            </label>
-          </div>
-
-          {selectedFile && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm font-semibold text-dark-blue">Arquivo selecionado:</p>
-              <p className="text-sm text-gray-600 mt-1">{selectedFile.name}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-              </p>
-            </div>
-          )}
-
-          {uploadProgress > 0 && (
-            <div className="space-y-2">
-              <div className="bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-dark-blue h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-              <p className="text-sm text-gray-600">{uploadProgress}% concluído</p>
-            </div>
-          )}
-
-          <button
-            onClick={handleUpload}
-            disabled={!selectedFile || isLoading}
-            className="w-full px-4 py-2 bg-dark-blue text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50 transition-all"
-          >
-            {isLoading ? 'Enviando...' : 'Fazer Upload'}
-          </button>
-        </div>
-      </GlassCard>
-
-      {/* Documents List */}
-      <GlassCard className="p-6">
-        <h2 className="text-xl font-bold text-dark-blue mb-4">📄 Meus Documentos</h2>
-
-        {isLoading && !documents.length ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-dark-blue mx-auto"></div>
-            <p className="text-gray-600 mt-2">Carregando documentos...</p>
-          </div>
-        ) : documents.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-500">Nenhum documento enviado ainda</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {documents.map((doc) => (
-              <div
-                key={doc.id}
-                className="flex items-center justify-between p-4 bg-light-gray rounded-lg hover:shadow-md transition-all"
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="text-2xl">
-                    {doc.type?.includes('pdf') ? '📕' : doc.type?.includes('word') ? '📗' : '📄'}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-dark-blue">{doc.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(doc.createdAt).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleDownload(doc.id)}
-                    className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm hover:bg-blue-200 transition-colors"
-                  >
-                    ⬇️ Download
-                  </button>
-                  <button
-                    onClick={() => handleDelete(doc.id)}
-                    className="px-3 py-1 bg-red-100 text-red-800 rounded text-sm hover:bg-red-200 transition-colors"
-                  >
-                    🗑️ Deletar
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </GlassCard>
-
-      {/* Info Box */}
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-700">
-          ℹ️ <strong>Nota:</strong> Os documentos serão automaticamente salvos no OneDrive após configurar as credenciais do Microsoft Azure.
+      {loading ? (
+        <p style={{ color: designSystem.colors.neutral.gray500 }}>Carregando clientes...</p>
+      ) : filtered.length === 0 ? (
+        <p style={{ color: designSystem.colors.neutral.gray500, padding: '24px 0' }}>
+          {leads.length === 0
+            ? 'Nenhum cliente cadastrado ainda. Cadastre leads na página de Leads.'
+            : 'Nenhum cliente encontrado para essa busca.'}
         </p>
-      </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {filtered.map((lead) => (
+            <div
+              key={lead.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                flexWrap: 'wrap',
+                backgroundColor: '#fff',
+                border: `1px solid ${designSystem.colors.neutral.gray300}`,
+                borderRadius: '10px',
+                padding: '14px 18px',
+              }}
+            >
+              <div style={{ minWidth: '200px' }}>
+                <p style={{ margin: 0, fontWeight: 600, color: designSystem.colors.primary.dark, fontSize: '15px' }}>
+                  {lead.name}
+                </p>
+                <p style={{ margin: '4px 0 0', fontSize: '12px', color: designSystem.colors.neutral.gray600 }}>
+                  {CATEGORY_LABELS[lead.category] || lead.category}
+                  {lead.cpf ? ` • CPF ${lead.cpf}` : ''}
+                  {lead.phone ? ` • ${lead.phone}` : ''}
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button style={btnStyle(designSystem.colors.primary.dark)} onClick={() => generateLeadWord(lead)}>
+                  📝 Gerar Word
+                </button>
+                <button style={btnStyle(designSystem.colors.status.error)} onClick={() => generateLeadPDF(lead)}>
+                  📄 Gerar PDF
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

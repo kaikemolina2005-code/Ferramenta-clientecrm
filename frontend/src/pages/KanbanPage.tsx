@@ -397,6 +397,40 @@ export function KanbanPage() {
     }
   };
 
+  // "Fechar contrato": marca o lead como Convertido e move o card para a aba
+  // Jurídico (fluxo: Comercial fecha a venda -> Jurídico toca o processo).
+  const handleCloseContract = async (card: KanbanCardType) => {
+    const currentSector = Object.keys(cards).find((s) => (cards[s] || []).some((c) => c.id === card.id)) || activeSector;
+    const targetSector = currentSector === 'LEGAL' ? 'ADMINISTRATIVE' : 'LEGAL';
+    const targetName = BUILTIN_SECTORS[targetSector]?.name || targetSector;
+
+    if (!confirm(`Fechar contrato de "${card.lead?.name || 'este lead'}"?\n\nO lead será marcado como Convertido e o card irá para a aba "${targetName}".`)) return;
+
+    try {
+      // 1) marca o lead como convertido
+      await leadService.update(card.leadId, { status: 'CONVERTED' as any });
+
+      // 2) garante que a aba de destino exista no quadro
+      if (!sectors.some((s) => s.key === targetSector)) {
+        const info = BUILTIN_SECTORS[targetSector];
+        const updated = [...sectors, { key: targetSector, name: info.name, color: info.color, icon: info.icon }];
+        setSectors(updated);
+        persistConfig(stageNameOverrides, removedStages, addedStages, updated);
+      }
+
+      // 3) move o card para a primeira etapa da aba de destino
+      const targetStage = (DEFAULT_STAGES[targetSector] || GENERIC_STAGES)[0].key;
+      await kanbanService.moveCard(card.id, { sector: targetSector, stage: targetStage, position: 0 });
+
+      if (draggedCard?.id === card.id) setDraggedCard(null);
+      await loadKanbanCards();
+      alert(`✅ Contrato fechado! O card foi movido para a aba "${targetName}".`);
+    } catch (error) {
+      console.error('Erro ao fechar contrato:', error);
+      alert('Erro ao fechar o contrato. Tente novamente.');
+    }
+  };
+
   const openEditCard = (card: KanbanCardType) => {
     setEditForm({
       name: card.lead?.name || '',
@@ -997,6 +1031,28 @@ export function KanbanPage() {
                               🗑️ Excluir
                             </button>
                           </div>
+
+                          {/* Fechar contrato: marca Convertido e move para o Jurídico */}
+                          <button
+                            title="Marcar contrato como fechado e mover para o Jurídico"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCloseContract(card);
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '6px 10px',
+                              fontSize: '12px',
+                              fontWeight: '700',
+                              border: 'none',
+                              borderRadius: '6px',
+                              backgroundColor: designSystem.colors.status.success,
+                              color: designSystem.colors.neutral.white,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            ✅ Fechar contrato
+                          </button>
 
                           {/* Category Badge */}
                           {card.lead?.category && (
