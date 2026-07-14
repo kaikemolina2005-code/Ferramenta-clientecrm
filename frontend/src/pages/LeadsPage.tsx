@@ -159,8 +159,9 @@ export function LeadsPage() {
       setLeads([newLead, ...leads]);
       setFormData(EMPTY_FORM);
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao criar lead:', error);
+      alert(error?.response?.data?.error || 'Erro ao criar o lead. Verifique os dados e tente novamente.');
     }
   };
 

@@ -120,6 +120,14 @@ export async function createLead(req: AuthenticatedRequest, res: Response) {
     });
   } catch (error: any) {
     console.error('Create lead error:', error);
+    // P2002 = violação de campo único (CPF, WhatsApp) -> mensagem amigável
+    if (error?.code === 'P2002') {
+      const target = Array.isArray(error?.meta?.target) ? error.meta.target.join(',') : '';
+      const campo = target.includes('cpf') ? 'CPF' : target.includes('whatsapp') ? 'WhatsApp' : 'dado único';
+      return res.status(400).json({
+        error: `Já existe um lead cadastrado com este ${campo}.`,
+      });
+    }
     res.status(400).json({
       error: error.message || 'Erro ao criar lead',
     });

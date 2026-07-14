@@ -30,7 +30,8 @@ export class LeadService {
         name: data.name,
         phone: data.phone,
         email: data.email,
-        cpf: data.cpf || '',
+        // CPF vazio vira NULL (o campo é único; '' repetido bloqueava novos cadastros)
+        cpf: data.cpf?.trim() || null,
         whatsappId: data.whatsappId || null,
         birthDate: data.birthDate,
         address: data.address,
@@ -109,6 +110,10 @@ export class LeadService {
    * Atualizar lead
    */
   async updateLead(id: string, data: Partial<Lead>): Promise<Lead> {
+    // CPF vazio vira NULL (campo único — '' repetido causaria conflito)
+    if (data.cpf !== undefined && !String(data.cpf ?? '').trim()) {
+      data.cpf = null;
+    }
     return prisma.lead.update({
       where: { id },
       data,

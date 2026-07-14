@@ -289,7 +289,7 @@ model Lead {
   id              String     @id @default(cuid())
   whatsappId      String?    @unique
   name            String
-  cpf             String     @unique
+  cpf             String?    @unique
   birthDate       DateTime?
   phone           String
   email           String?

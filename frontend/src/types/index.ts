@@ -18,7 +18,7 @@ export interface Lead {
   id: string;
   whatsappId?: string;
   name: string;
-  cpf: string;
+  cpf?: string;
   birthDate?: Date;
   phone: string;
   email?: string;
