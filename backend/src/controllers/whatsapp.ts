@@ -7,7 +7,7 @@ import { oneDriveService } from '../services/oneDriveService.js';
 import { downloadWhatsAppMedia, sendWhatsAppText, mimeToExt, mimeToLabel } from '../services/whatsappMediaService.js';
 import { PrismaClient } from '@prisma/client';
 
-import { prisma } from '../services/prisma';
+import { prisma } from '../services/prisma.js';
 
 /**
  * Valida e processa webhook do WhatsApp

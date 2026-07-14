@@ -1,6 +1,6 @@
 import { PrismaClient, KanbanSector } from '@prisma/client';
 
-import { prisma } from './prisma';
+import { prisma } from './prisma.js';
 
 interface AssignmentResult {
   success: boolean;

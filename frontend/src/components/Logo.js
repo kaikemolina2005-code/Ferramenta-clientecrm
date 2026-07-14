@@ -29,23 +29,11 @@ export const ADVGDLogo = ({ size = 'medium', variant = 'full', showText = true, 
 };
 // Variante com texto completo (para header)
 export const ADVGDLogoDiego = ({ size = 'medium', className = '', }) => {
-    const textSize = {
-        small: 14,
-        medium: 18,
-        large: 24,
-        xlarge: 32,
+    const imgSize = {
+        small: 120,
+        medium: 170,
+        large: 220,
+        xlarge: 280,
     }[size];
-    return (_jsxs("div", { className: `flex flex-col items-center gap-2 ${className}`, children: [_jsx(ADVGDLogo, { size: size, variant: "icon", showText: false }), _jsxs("div", { className: "text-center", children: [_jsx("h1", { style: {
-                            fontSize: `${textSize}px`,
-                            fontWeight: 'bold',
-                            color: '#003f7f',
-                            margin: 0,
-                            letterSpacing: '1px',
-                        }, children: "DIEGO PATR\u00CDCIO" }), _jsx("p", { style: {
-                            fontSize: `${textSize * 0.5}px`,
-                            color: '#c9a961',
-                            margin: '2px 0 0 0',
-                            letterSpacing: '2px',
-                            fontWeight: '500',
-                        }, children: "ADVOGADO" })] })] }));
+    return (_jsx("div", { className: `flex flex-col items-center ${className}`, children: _jsx("img", { src: "/logo.png", alt: "Diego Patr\u00EDcio Advogado", style: { width: `${imgSize}px`, height: 'auto', borderRadius: '12px' } }) }));
 };

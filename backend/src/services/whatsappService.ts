@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { PrismaClient } from '@prisma/client';
 
-import { prisma } from './prisma';
+import { prisma } from './prisma.js';
 
 interface WhatsAppMessage {
   from: string;

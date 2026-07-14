@@ -4,7 +4,7 @@ import { autoAssignmentService } from './autoAssignmentService.js';
 import { emailSequenceService } from './emailSequenceService.js';
 import { emailService } from './emailService.js';
 
-import { prisma } from './prisma';
+import { prisma } from './prisma.js';
 
 class AutomationEngine {
   /**

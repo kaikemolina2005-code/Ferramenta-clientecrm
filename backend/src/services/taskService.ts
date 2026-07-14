@@ -1,6 +1,6 @@
 import { PrismaClient, LeadTask } from '@prisma/client';
 
-import { prisma } from './prisma';
+import { prisma } from './prisma.js';
 
 export class TaskService {
   /**

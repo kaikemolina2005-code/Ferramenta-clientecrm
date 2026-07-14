@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { User } from '@prisma/client';
 
-import { prisma } from './prisma';
+import { prisma } from './prisma.js';
 
 interface TokenPayload {
   id: string;

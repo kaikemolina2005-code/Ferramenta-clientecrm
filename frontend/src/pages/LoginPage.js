@@ -2,13 +2,15 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { Flex, Box, Heading, Text, FormControl, FormLabel, Input, InputGroup, InputRightElement, Button, Checkbox, Alert, AlertIcon, Icon, } from '@chakra-ui/react';
+import { Eye, EyeOff } from 'lucide-react';
 import { ADVGDLogoDiego } from '@/components/Logo';
-import { designSystem } from '@/theme/designSystem';
 export function LoginPage() {
     const { login } = useAuth();
     const navigate = useNavigate();
     const [email, setEmail] = useState('admin@advgd.com');
     const [password, setPassword] = useState('123456');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const handleLogin = async (e) => {
@@ -26,49 +28,5 @@ export function LoginPage() {
             setLoading(false);
         }
     };
-    return (_jsx("div", { className: "min-h-screen flex items-center justify-center p-4", style: {
-            background: 'linear-gradient(135deg, #003f7f 0%, #0d47a1 100%)',
-        }, children: _jsx("div", { className: "w-full max-w-md", children: _jsxs("div", { className: "rounded-xl p-8 shadow-xl", style: {
-                    backgroundColor: designSystem.colors.neutral.white,
-                }, children: [_jsx("div", { className: "flex justify-center mb-8", children: _jsx(ADVGDLogoDiego, { size: "medium" }) }), _jsx("h1", { className: "text-3xl font-bold text-center mb-2", style: { color: designSystem.colors.primary.dark }, children: "Bem-vindo" }), _jsx("p", { className: "text-center mb-8", style: { color: designSystem.colors.neutral.gray500 }, children: "Plataforma de Gest\u00E3o para Escrit\u00F3rios de Advocacia" }), _jsxs("form", { onSubmit: handleLogin, className: "space-y-6", children: [_jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-2", style: { color: designSystem.colors.primary.dark }, children: "Email" }), _jsx("input", { type: "email", value: email, onChange: (e) => setEmail(e.target.value), className: "w-full px-4 py-3 rounded-lg border-2 transition-all", style: {
-                                            borderColor: designSystem.colors.neutral.gray300,
-                                            backgroundColor: designSystem.colors.neutral.white,
-                                        }, onFocus: (e) => {
-                                            e.target.style.borderColor =
-                                                designSystem.colors.primary.dark;
-                                        }, onBlur: (e) => {
-                                            e.target.style.borderColor =
-                                                designSystem.colors.neutral.gray300;
-                                        }, placeholder: "seu@email.com" })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-2", style: { color: designSystem.colors.primary.dark }, children: "Senha" }), _jsx("input", { type: "password", value: password, onChange: (e) => setPassword(e.target.value), className: "w-full px-4 py-3 rounded-lg border-2 transition-all", style: {
-                                            borderColor: designSystem.colors.neutral.gray300,
-                                            backgroundColor: designSystem.colors.neutral.white,
-                                        }, onFocus: (e) => {
-                                            e.target.style.borderColor =
-                                                designSystem.colors.primary.dark;
-                                        }, onBlur: (e) => {
-                                            e.target.style.borderColor =
-                                                designSystem.colors.neutral.gray300;
-                                        }, placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" })] }), error && (_jsx("div", { className: "p-4 rounded-lg", style: {
-                                    backgroundColor: '#f8d7da',
-                                    color: designSystem.colors.status.error,
-                                    borderLeft: `4px solid ${designSystem.colors.status.error}`,
-                                }, children: error })), _jsxs("div", { className: "flex items-center", children: [_jsx("input", { type: "checkbox", id: "remember", className: "w-4 h-4" }), _jsx("label", { htmlFor: "remember", className: "ml-2 text-sm", style: { color: designSystem.colors.neutral.gray500 }, children: "Lembrar-me" })] }), _jsx("button", { type: "submit", disabled: loading, className: "w-full py-3 rounded-lg font-bold text-white transition-all", style: {
-                                    backgroundColor: loading
-                                        ? designSystem.colors.neutral.gray400
-                                        : designSystem.colors.primary.dark,
-                                    cursor: loading ? 'not-allowed' : 'pointer',
-                                }, onMouseEnter: (e) => {
-                                    if (!loading) {
-                                        e.currentTarget.style.backgroundColor =
-                                            designSystem.colors.primary.main;
-                                    }
-                                }, onMouseLeave: (e) => {
-                                    if (!loading) {
-                                        e.currentTarget.style.backgroundColor =
-                                            designSystem.colors.primary.dark;
-                                    }
-                                }, children: loading ? 'Carregando...' : 'Entrar' })] }), _jsxs("div", { className: "mt-8 p-4 rounded-lg border-l-4", style: {
-                            backgroundColor: designSystem.colors.primary.lighter,
-                            borderColor: designSystem.colors.accent.gold,
-                        }, children: [_jsx("p", { className: "text-xs font-semibold mb-2", style: { color: designSystem.colors.primary.dark }, children: "\uD83D\uDD13 Credenciais de Demonstra\u00E7\u00E3o:" }), _jsxs("p", { className: "text-xs", style: { color: designSystem.colors.neutral.gray600 }, children: [_jsx("strong", { children: "Email:" }), " admin@advgd.com", _jsx("br", {}), _jsx("strong", { children: "Senha:" }), " 123456"] })] }), _jsx("p", { className: "text-center text-xs mt-8", style: { color: designSystem.colors.neutral.gray500 }, children: "\u00A9 2026 ADVGD CRM. Todos os direitos reservados." })] }) }) }));
+    return (_jsx(Flex, { minH: "100vh", align: "center", justify: "center", p: "16px", bgGradient: "linear(135deg, #2b2f36 0%, #3a4048 100%)", children: _jsxs(Box, { w: "100%", maxW: "420px", bg: "white", borderRadius: "20px", p: "32px", boxShadow: "2xl", children: [_jsx(Flex, { justify: "center", mb: "24px", children: _jsx(ADVGDLogoDiego, { size: "medium" }) }), _jsx(Heading, { textAlign: "center", fontSize: "3xl", color: "brand.600", mb: "4px", children: "Bem-vindo" }), _jsx(Text, { textAlign: "center", color: "secondaryGray.700", mb: "28px", fontSize: "sm", children: "Plataforma de Gest\u00E3o para Escrit\u00F3rios de Advocacia" }), _jsxs("form", { onSubmit: handleLogin, children: [_jsxs(FormControl, { mb: "16px", isRequired: true, children: [_jsx(FormLabel, { fontSize: "sm", color: "brand.600", children: "Email" }), _jsx(Input, { type: "email", value: email, onChange: (e) => setEmail(e.target.value), placeholder: "seu@email.com", borderRadius: "12px" })] }), _jsxs(FormControl, { mb: "16px", isRequired: true, children: [_jsx(FormLabel, { fontSize: "sm", color: "brand.600", children: "Senha" }), _jsxs(InputGroup, { children: [_jsx(Input, { type: showPassword ? 'text' : 'password', value: password, onChange: (e) => setPassword(e.target.value), placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022", borderRadius: "12px" }), _jsx(InputRightElement, { children: _jsx(Box, { cursor: "pointer", onClick: () => setShowPassword(!showPassword), children: _jsx(Icon, { as: showPassword ? EyeOff : Eye, color: "secondaryGray.600", boxSize: "18px" }) }) })] })] }), error && (_jsxs(Alert, { status: "error", borderRadius: "12px", mb: "16px", fontSize: "sm", children: [_jsx(AlertIcon, {}), error] })), _jsx(Checkbox, { mb: "20px", colorScheme: "blue", defaultChecked: false, children: _jsx(Text, { fontSize: "sm", color: "secondaryGray.700", children: "Lembrar-me" }) }), _jsx(Button, { type: "submit", isLoading: loading, loadingText: "Carregando...", variant: "brand", w: "100%", py: "22px", children: "Entrar" })] }), _jsxs(Box, { mt: "24px", p: "14px", borderRadius: "12px", bg: "brand.50", borderLeftWidth: "4px", borderColor: "gold.500", children: [_jsx(Text, { fontSize: "xs", fontWeight: "700", color: "brand.600", mb: "4px", children: "\uD83D\uDD13 Credenciais de Demonstra\u00E7\u00E3o:" }), _jsxs(Text, { fontSize: "xs", color: "secondaryGray.700", children: [_jsx("strong", { children: "Email:" }), " admin@advgd.com", _jsx("br", {}), _jsx("strong", { children: "Senha:" }), " 123456"] })] }), _jsx(Text, { textAlign: "center", fontSize: "xs", color: "secondaryGray.700", mt: "20px", children: "\u00A9 2026 ADVGD CRM. Todos os direitos reservados." })] }) }));
 }

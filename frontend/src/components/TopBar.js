@@ -30,10 +30,11 @@ export const TopBar = ({ title = 'Dashboard', subtitle, actions }) => {
 };
 // Card Component com design system
 export const Card = ({ children, title, subtitle, icon, className = '', hoverable = false, style = {} }) => {
-    return (_jsxs("div", { className: `rounded-lg p-6 ${hoverable ? 'cursor-pointer transition-all' : ''} ${className}`, style: {
+    return (_jsxs("div", { className: `p-6 ${hoverable ? 'cursor-pointer transition-all' : ''} ${className}`, style: {
             backgroundColor: designSystem.colors.neutral.white,
-            border: `1px solid ${designSystem.colors.neutral.gray200}`,
-            boxShadow: designSystem.shadows.md,
+            borderRadius: '20px',
+            border: 'none',
+            boxShadow: '0px 18px 40px rgba(112, 144, 176, 0.12)',
             ...(hoverable && {
                 transform: 'translateY(0)',
                 transition: 'all 0.3s ease',
@@ -42,12 +43,12 @@ export const Card = ({ children, title, subtitle, icon, className = '', hoverabl
         }, onMouseEnter: (e) => {
             if (hoverable) {
                 e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = designSystem.shadows.lg;
+                e.currentTarget.style.boxShadow = '0px 24px 50px rgba(112, 144, 176, 0.2)';
             }
         }, onMouseLeave: (e) => {
             if (hoverable) {
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = designSystem.shadows.md;
+                e.currentTarget.style.boxShadow = '0px 18px 40px rgba(112, 144, 176, 0.12)';
             }
         }, children: [(title || icon) && (_jsxs("div", { className: "mb-4 flex items-center gap-3", children: [icon && _jsx("span", { className: "text-2xl", children: icon }), _jsxs("div", { children: [title && (_jsx("h3", { className: "font-semibold text-lg", style: { color: designSystem.colors.primary.dark }, children: title })), subtitle && (_jsx("p", { className: "text-sm", style: { color: designSystem.colors.neutral.gray500 }, children: subtitle }))] })] })), children] }));
 };

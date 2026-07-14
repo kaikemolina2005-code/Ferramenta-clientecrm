@@ -19,8 +19,16 @@ export const leadService = {
         const response = await api.put(`/leads/${id}`, data);
         return response.data.data;
     },
-    async delete(id) {
-        await api.delete(`/leads/${id}`);
+    async delete(id, reason) {
+        await api.delete(`/leads/${id}`, { data: { reason } });
+    },
+    async getDeletionLogs() {
+        const response = await api.get('/leads/deletion-logs');
+        return response.data.data || [];
+    },
+    async importLeads(leads) {
+        const response = await api.post('/leads/import', { leads });
+        return response.data;
     },
     async search(query) {
         const response = await api.get(`/leads/search/${query}`);
@@ -51,8 +59,14 @@ export const kanbanService = {
         const response = await api.post(`/kanban/lead/${leadId}`, { sector, stage });
         return response.data.data;
     },
+    async getConfig() {
+        const response = await api.get('/kanban/config');
+        return response.data.data || {};
+    },
+    async saveConfig(config) {
+        await api.put('/kanban/config', config);
+    },
 };
-
 export const taskService = {
     async getByLead(leadId) {
         const response = await api.get(`/tasks/lead/${leadId}`);
@@ -61,10 +75,12 @@ export const taskService = {
     async create(leadId, data) {
         const formData = new FormData();
         formData.append('title', data.title);
-        if (data.description) formData.append('description', data.description);
-        if (data.dueDate) formData.append('dueDate', data.dueDate);
-        if (data.file) formData.append('file', data.file);
-
+        if (data.description)
+            formData.append('description', data.description);
+        if (data.dueDate)
+            formData.append('dueDate', data.dueDate);
+        if (data.file)
+            formData.append('file', data.file);
         const response = await api.post(`/tasks/lead/${leadId}`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
         });
