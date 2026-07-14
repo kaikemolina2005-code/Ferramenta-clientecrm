@@ -1,0 +1,21 @@
+name: Keep API Awake
+
+# Mantém a API no Render acordada (o plano gratuito hiberna após 15 min sem uso,
+# fazendo o primeiro acesso demorar 20-60s). Este robô chama a API a cada 10 min.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping API health endpoint
+        run: |
+          echo "Acordando a API..."
+          # --retry cobre o caso de a API estar no meio do cold start
+          curl -sf --max-time 90 --retry 3 --retry-delay 10 \
+            "https://ferramenta-clientecrm.onrender.com/health" \
+            && echo "✅ API acordada e saudável" \
+            || echo "⚠️ API não respondeu (verifique o painel do Render)"
