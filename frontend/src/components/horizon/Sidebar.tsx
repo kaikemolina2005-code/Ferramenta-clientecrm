@@ -25,7 +25,6 @@ import {
   BarChart2,
   FileText,
   MessageSquare,
-  Brain,
   LogOut,
   User,
 } from 'lucide-react';
@@ -43,7 +42,6 @@ const NAV_ITEMS = [
   { to: '/reports', icon: BarChart2, label: 'Relatórios' },
   { to: '/documentos', icon: FileText, label: 'Documentos' },
   { to: '/whatsapp', icon: MessageSquare, label: 'WhatsApp' },
-  { to: '/ai', icon: Brain, label: 'IA Documents' },
   { to: '/perfil', icon: User, label: 'Perfil' },
 ];
 

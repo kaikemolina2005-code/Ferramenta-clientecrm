@@ -12,7 +12,6 @@ const LeadDetailPage = lazy(() => import('@/pages/LeadDetailPage').then((m) => (
 const DocumentsPage = lazy(() => import('@/pages/DocumentsPage').then((m) => ({ default: m.DocumentsPage })))
 const KanbanPage = lazy(() => import('@/pages/KanbanPage').then((m) => ({ default: m.KanbanPage })))
 const WhatsAppPage = lazy(() => import('@/pages/WhatsAppPage').then((m) => ({ default: m.WhatsAppPage })))
-const AIPage = lazy(() => import('@/pages/AIPage').then((m) => ({ default: m.AIPage })))
 const TasksPage = lazy(() => import('@/pages/TasksPage').then((m) => ({ default: m.TasksPage })))
 const AutomationDashboard = lazy(() => import('@/pages/AutomationDashboard'))
 const ReportsPage = lazy(() => import('@/pages/ReportsPage'))
@@ -90,14 +89,6 @@ function App() {
               element={
                 <Layout>
                   <WhatsAppPage />
-                </Layout>
-              }
-            />
-            <Route
-              path="/ai"
-              element={
-                <Layout>
-                  <AIPage />
                 </Layout>
               }
             />
