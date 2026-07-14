@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from '../services/prisma';
 
 /**
  * Verifica o token secreto do Typebot (enviado no header X-Typebot-Secret)

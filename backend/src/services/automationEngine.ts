@@ -4,7 +4,7 @@ import { autoAssignmentService } from './autoAssignmentService.js';
 import { emailSequenceService } from './emailSequenceService.js';
 import { emailService } from './emailService.js';
 
-const prisma = new PrismaClient();
+import { prisma } from './prisma';
 
 class AutomationEngine {
   /**

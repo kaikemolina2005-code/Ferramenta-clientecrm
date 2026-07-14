@@ -7,7 +7,7 @@ import {
   LeadCategory 
 } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from './prisma';
 
 interface SequenceStep {
   stepNumber: number;

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from './prisma';
 
 export class ReportsService {
   /**
@@ -11,49 +11,47 @@ export class ReportsService {
     const end = endDate || new Date();
 
     try {
-      // Total de leads no período
-      const totalLeads = await prisma.lead.count({
-        where: { createdAt: { gte: start, lte: end } }
-      });
-
-      // Leads convertidos
-      const convertedLeads = await prisma.lead.count({
-        where: {
-          status: 'CONVERTED',
-          createdAt: { gte: start, lte: end }
-        }
-      });
+      // Executa todas as consultas em paralelo (muito mais rápido que em série)
+      const [totalLeads, convertedLeads, scoreStats, leadsByStatus, leadsByCategory, activeProcesses] = await Promise.all([
+        // Total de leads no período
+        prisma.lead.count({
+          where: { createdAt: { gte: start, lte: end } }
+        }),
+        // Leads convertidos
+        prisma.lead.count({
+          where: {
+            status: 'CONVERTED',
+            createdAt: { gte: start, lte: end }
+          }
+        }),
+        // Score médio
+        prisma.lead.aggregate({
+          _avg: { score: true },
+          _max: { score: true },
+          _min: { score: true }
+        }),
+        // Leads por status
+        prisma.lead.groupBy({
+          by: ['status'],
+          _count: true,
+          where: { createdAt: { gte: start, lte: end } }
+        }),
+        // Leads por categoria
+        prisma.lead.groupBy({
+          by: ['category'],
+          _count: true,
+          where: { createdAt: { gte: start, lte: end } }
+        }),
+        // Processos ativos (ainda em andamento, não convertidos nem perdidos)
+        prisma.lead.count({
+          where: {
+            status: { in: ['INITIAL', 'CONSULTING', 'PAYMENT'] }
+          }
+        })
+      ]);
 
       // Taxa de conversão
       const conversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
-
-      // Score médio
-      const scoreStats = await prisma.lead.aggregate({
-        _avg: { score: true },
-        _max: { score: true },
-        _min: { score: true }
-      });
-
-      // Leads por status
-      const leadsByStatus = await prisma.lead.groupBy({
-        by: ['status'],
-        _count: true,
-        where: { createdAt: { gte: start, lte: end } }
-      });
-
-      // Leads por categoria
-      const leadsByCategory = await prisma.lead.groupBy({
-        by: ['category'],
-        _count: true,
-        where: { createdAt: { gte: start, lte: end } }
-      });
-
-      // Processos ativos (ainda em andamento, não convertidos nem perdidos)
-      const activeProcesses = await prisma.lead.count({
-        where: {
-          status: { in: ['INITIAL', 'CONSULTING', 'PAYMENT'] }
-        }
-      });
 
       return {
         period: { start, end },
@@ -83,35 +81,34 @@ export class ReportsService {
     const end = endDate || new Date();
 
     try {
-      // Leads por fonte
-      const leadsBySource = await prisma.lead.groupBy({
-        by: ['source'],
-        _count: true,
-        where: { createdAt: { gte: start, lte: end } }
-      });
-
-      // Leads por responsável
-      const leadsByUser = await prisma.lead.groupBy({
-        by: ['responsibleId'],
-        _count: true,
-        where: { createdAt: { gte: start, lte: end } }
-      });
-
-      // Leads com scores altos vs baixos
-      const highScoreLeads = await prisma.lead.count({
-        where: { score: { gte: 70 }, createdAt: { gte: start, lte: end } }
-      });
-
-      const lowScoreLeads = await prisma.lead.count({
-        where: { score: { lt: 40 }, createdAt: { gte: start, lte: end } }
-      });
-
-      // Tempo médio no pipeline
-      const allLeads = await prisma.lead.findMany({
-        where: { createdAt: { gte: start, lte: end } },
-        select: { createdAt: true, updatedAt: true },
-        take: 1000
-      });
+      // Executa todas as consultas em paralelo
+      const [leadsBySource, leadsByUser, highScoreLeads, lowScoreLeads, allLeads] = await Promise.all([
+        // Leads por fonte
+        prisma.lead.groupBy({
+          by: ['source'],
+          _count: true,
+          where: { createdAt: { gte: start, lte: end } }
+        }),
+        // Leads por responsável
+        prisma.lead.groupBy({
+          by: ['responsibleId'],
+          _count: true,
+          where: { createdAt: { gte: start, lte: end } }
+        }),
+        // Leads com scores altos vs baixos
+        prisma.lead.count({
+          where: { score: { gte: 70 }, createdAt: { gte: start, lte: end } }
+        }),
+        prisma.lead.count({
+          where: { score: { lt: 40 }, createdAt: { gte: start, lte: end } }
+        }),
+        // Tempo médio no pipeline
+        prisma.lead.findMany({
+          where: { createdAt: { gte: start, lte: end } },
+          select: { createdAt: true, updatedAt: true },
+          take: 1000
+        })
+      ]);
 
       const avgDaysInPipeline = allLeads.length > 0
         ? allLeads.reduce((sum, lead) => {
@@ -144,31 +141,32 @@ export class ReportsService {
     const end = endDate || new Date();
 
     try {
-      // Conversões por categoria
-      const conversionByCategory = await prisma.lead.groupBy({
-        by: ['category'],
-        _count: { id: true },
-        where: {
-          status: 'CONVERTED',
-          createdAt: { gte: start, lte: end }
-        }
-      });
-
-      // Taxa de conversão por responsável
-      const allLeadsByUser = await prisma.lead.groupBy({
-        by: ['responsibleId'],
-        _count: { id: true },
-        where: { createdAt: { gte: start, lte: end } }
-      });
-
-      const convertedByUser = await prisma.lead.groupBy({
-        by: ['responsibleId'],
-        _count: { id: true },
-        where: {
-          status: 'CONVERTED',
-          createdAt: { gte: start, lte: end }
-        }
-      });
+      // Executa todas as consultas em paralelo
+      const [conversionByCategory, allLeadsByUser, convertedByUser] = await Promise.all([
+        // Conversões por categoria
+        prisma.lead.groupBy({
+          by: ['category'],
+          _count: { id: true },
+          where: {
+            status: 'CONVERTED',
+            createdAt: { gte: start, lte: end }
+          }
+        }),
+        // Taxa de conversão por responsável
+        prisma.lead.groupBy({
+          by: ['responsibleId'],
+          _count: { id: true },
+          where: { createdAt: { gte: start, lte: end } }
+        }),
+        prisma.lead.groupBy({
+          by: ['responsibleId'],
+          _count: { id: true },
+          where: {
+            status: 'CONVERTED',
+            createdAt: { gte: start, lte: end }
+          }
+        })
+      ]);
 
       // Top performers
       const topPerformersRaw = convertedByUser
@@ -217,38 +215,38 @@ export class ReportsService {
     const end = endDate || new Date();
 
     try {
-      // Total de automações executadas
-      const totalAutomations = await prisma.automationLog.count({
-        where: { createdAt: { gte: start, lte: end } }
-      });
-
-      // Automações por status
-      const automationsByStatus: any[] = await (prisma.automationLog.groupBy as any)({
-        by: ['status'],
-        _count: true,
-        where: { createdAt: { gte: start, lte: end } }
-      });
-
-      // Automações por action
-      const automationsByAction: any[] = await (prisma.automationLog.groupBy as any)({
-        by: ['action'],
-        _count: true,
-        where: { createdAt: { gte: start, lte: end } }
-      });
+      // Executa todas as consultas em paralelo
+      const [totalAutomations, automationsByStatus, automationsByAction, topRules] = await Promise.all([
+        // Total de automações executadas
+        prisma.automationLog.count({
+          where: { createdAt: { gte: start, lte: end } }
+        }),
+        // Automações por status
+        (prisma.automationLog.groupBy as any)({
+          by: ['status'],
+          _count: true,
+          where: { createdAt: { gte: start, lte: end } }
+        }) as Promise<any[]>,
+        // Automações por action
+        (prisma.automationLog.groupBy as any)({
+          by: ['action'],
+          _count: true,
+          where: { createdAt: { gte: start, lte: end } }
+        }) as Promise<any[]>,
+        // Top regras mais usadas
+        (prisma.automationLog.groupBy as any)({
+          by: ['ruleId'],
+          _count: { ruleId: true },
+          where: { createdAt: { gte: start, lte: end } },
+          orderBy: { _count: { ruleId: 'desc' } },
+          take: 5
+        })
+      ]);
 
       // Taxa de sucesso
       const successful = automationsByStatus.find((s: any) => s.status === 'EXECUTED')?._count || 0;
       const failed = automationsByStatus.find((s: any) => s.status === 'FAILED')?._count || 0;
       const successRate = totalAutomations > 0 ? (successful / totalAutomations) * 100 : 0;
-
-      // Top regras mais usadas
-      const topRules = await (prisma.automationLog.groupBy as any)({
-        by: ['ruleId'],
-        _count: { ruleId: true },
-        where: { createdAt: { gte: start, lte: end } },
-        orderBy: { _count: { ruleId: 'desc' } },
-        take: 5
-      });
 
       return {
         period: { start, end },
@@ -333,29 +331,29 @@ export class ReportsService {
       const previousStart = new Date(currentStart);
       previousStart.setDate(previousStart.getDate() - days);
 
-      // Current period
-      const currentLeads = await prisma.lead.count({
-        where: { createdAt: { gte: currentStart, lte: today } }
-      });
-
-      const currentConverted = await prisma.lead.count({
-        where: {
-          status: 'CONVERTED',
-          createdAt: { gte: currentStart, lte: today }
-        }
-      });
-
-      // Previous period
-      const previousLeads = await prisma.lead.count({
-        where: { createdAt: { gte: previousStart, lt: currentStart } }
-      });
-
-      const previousConverted = await prisma.lead.count({
-        where: {
-          status: 'CONVERTED',
-          createdAt: { gte: previousStart, lt: currentStart }
-        }
-      });
+      // Executa as 4 contagens em paralelo
+      const [currentLeads, currentConverted, previousLeads, previousConverted] = await Promise.all([
+        // Current period
+        prisma.lead.count({
+          where: { createdAt: { gte: currentStart, lte: today } }
+        }),
+        prisma.lead.count({
+          where: {
+            status: 'CONVERTED',
+            createdAt: { gte: currentStart, lte: today }
+          }
+        }),
+        // Previous period
+        prisma.lead.count({
+          where: { createdAt: { gte: previousStart, lt: currentStart } }
+        }),
+        prisma.lead.count({
+          where: {
+            status: 'CONVERTED',
+            createdAt: { gte: previousStart, lt: currentStart }
+          }
+        })
+      ]);
 
       const leadsGrowth = previousLeads > 0 ? Math.round(((currentLeads - previousLeads) / previousLeads) * 100) : 0;
       const conversionGrowth = previousConverted > 0

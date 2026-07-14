@@ -3,7 +3,7 @@ import { aiService } from '../services/aiService.js';
 import { socketService } from '../socket/service.js';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from '../services/prisma';
 
 interface AuthenticatedRequest extends Request {
   userId?: string;
