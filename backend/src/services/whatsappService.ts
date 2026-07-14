@@ -282,7 +282,7 @@ export class WhatsAppService {
   }
 
   /**
-   * Verifica status de credenciais
+   * Verifica se as credenciais estão PREENCHIDAS (não testa contra a Meta)
    */
   getConnectionStatus(): {
     configured: boolean;
@@ -292,6 +292,60 @@ export class WhatsAppService {
       configured: !!(this.accessToken && this.phoneNumberId),
       phoneNumberId: this.phoneNumberId,
     };
+  }
+
+  /**
+   * Verifica de VERDADE se a integração funciona: chama a API da Meta
+   * com o token/telefone configurados. Retorna se está realmente conectado
+   * e uma mensagem explicando o motivo quando não está.
+   */
+  async verifyConnection(): Promise<{
+    configured: boolean;   // credenciais preenchidas
+    connected: boolean;    // token válido e telefone acessível na Meta
+    phoneNumberId: string;
+    displayPhoneNumber?: string;
+    reason?: string;       // explicação quando não conectado
+  }> {
+    const configured = !!(this.accessToken && this.phoneNumberId);
+
+    if (!configured) {
+      return {
+        configured: false,
+        connected: false,
+        phoneNumberId: this.phoneNumberId,
+        reason: 'Credenciais do WhatsApp não configuradas no servidor (variáveis WHATSAPP_BUSINESS_ACCESS_TOKEN e WHATSAPP_BUSINESS_PHONE_ID).',
+      };
+    }
+
+    try {
+      const response = await axios.get(
+        `${WHATSAPP_API_URL}/${this.phoneNumberId}`,
+        {
+          params: { fields: 'display_phone_number,verified_name' },
+          headers: { Authorization: `Bearer ${this.accessToken}` },
+          timeout: 10000,
+        }
+      );
+      return {
+        configured: true,
+        connected: true,
+        phoneNumberId: this.phoneNumberId,
+        displayPhoneNumber: response.data?.display_phone_number,
+      };
+    } catch (error: any) {
+      const metaError = error?.response?.data?.error?.message;
+      const httpStatus = error?.response?.status;
+      let reason = metaError || error?.message || 'Falha ao conectar com a Meta.';
+      if (httpStatus === 401 || /expired|invalid|token/i.test(reason)) {
+        reason = 'Token do WhatsApp inválido ou expirado. Gere um novo token no painel da Meta e atualize no servidor.';
+      }
+      return {
+        configured: true,
+        connected: false,
+        phoneNumberId: this.phoneNumberId,
+        reason,
+      };
+    }
   }
 
   /**

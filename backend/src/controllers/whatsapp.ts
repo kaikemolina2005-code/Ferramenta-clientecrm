@@ -262,7 +262,8 @@ async function processMediaMessages(payload: any): Promise<void> {
  */
 export const getConnectionStatus = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const status = whatsappService.getConnectionStatus();
+    // Verifica de verdade contra a Meta (não só se as credenciais existem)
+    const status = await whatsappService.verifyConnection();
     res.status(200).json(status);
   } catch (error) {
     console.error('Erro ao obter status:', error);

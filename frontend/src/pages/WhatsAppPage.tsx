@@ -6,7 +6,10 @@ import api from '@/services/api';
 
 interface ConnectionStatus {
   configured: boolean;
+  connected: boolean;
   phoneNumberId: string;
+  displayPhoneNumber?: string;
+  reason?: string;
 }
 
 interface Activity {
@@ -93,9 +96,14 @@ export const WhatsAppPage: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (configured: boolean) => {
-    if (configured) {
+  const getStatusBadge = (status: ConnectionStatus | null) => {
+    if (!status) return <Badge variant="warning">⚫ Não Configurado</Badge>;
+    if (status.connected) {
       return <Badge variant="success">🟢 Conectado</Badge>;
+    }
+    if (status.configured) {
+      // credenciais preenchidas mas o token não funciona na Meta
+      return <Badge variant="error">🔴 Falha na conexão</Badge>;
     }
     return <Badge variant="warning">⚫ Não Configurado</Badge>;
   };
@@ -149,8 +157,33 @@ export const WhatsAppPage: React.FC = () => {
             <span style={{ color: designSystem.colors.neutral.gray600, fontWeight: '500' }}>
               Status:
             </span>
-            {connectionStatus && getStatusBadge(connectionStatus.configured)}
+            {getStatusBadge(connectionStatus)}
           </div>
+
+          {/* Explica o motivo quando não está realmente conectado */}
+          {connectionStatus && !connectionStatus.connected && connectionStatus.reason && (
+            <div style={{
+              backgroundColor: designSystem.colors.status.error + '15',
+              border: `1px solid ${designSystem.colors.status.error}40`,
+              borderRadius: '8px',
+              padding: '10px 12px',
+              fontSize: '13px',
+              color: designSystem.colors.neutral.gray600,
+              lineHeight: 1.5,
+            }}>
+              <strong style={{ color: designSystem.colors.status.error }}>⚠️ Não está recebendo mensagens.</strong> {connectionStatus.reason}
+            </div>
+          )}
+          {connectionStatus?.connected && connectionStatus.displayPhoneNumber && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+              <span style={{ color: designSystem.colors.neutral.gray600, fontWeight: '500' }}>Número:</span>
+              <span style={{ fontWeight: 600, color: designSystem.colors.primary.dark }}>{connectionStatus.displayPhoneNumber}</span>
+            </div>
+          )}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -561,8 +594,8 @@ export const WhatsAppPage: React.FC = () => {
         </Card>
       )}
 
-      {/* Instruções de Configuração */}
-      {!connectionStatus?.configured && (
+      {/* Instruções de Configuração (aparece quando não está realmente conectado) */}
+      {connectionStatus && !connectionStatus.connected && (
         <Card title="⚙️ Configurar WhatsApp" icon="🔧" hoverable>
           <p style={{
             fontSize: '13px',
