@@ -28,7 +28,6 @@ const NAV_ITEMS = [
   { to: '/tarefas',    icon: CheckSquare,       label: 'Tarefas' },
   { to: '/automation', icon: Settings,          label: 'Automações' },
   { to: '/reports',    icon: BarChart2,         label: 'Relatórios' },
-  { to: '/documentos', icon: FileText,          label: 'Documentos' },
   { to: '/whatsapp',   icon: MessageSquare,     label: 'WhatsApp' },
   { to: '/ai',         icon: Brain,             label: 'IA Documents' },
 ];
