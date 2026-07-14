@@ -39,8 +39,19 @@ export interface Lead {
   responsibleId?: string;
   responsible?: User;
   tasks?: LeadTask[];
+  leadNotes?: LeadNote[];
   createdAt: string;
   updatedAt: string;
+}
+
+// Nota/histórico do lead (timeline do card no Kanban)
+export interface LeadNote {
+  id: string;
+  leadId: string;
+  content: string;
+  createdById?: string;
+  createdBy?: { id: string; name: string };
+  createdAt: string;
 }
 
 export interface LeadTask {

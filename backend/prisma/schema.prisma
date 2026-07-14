@@ -30,6 +30,7 @@ model User {
   documents  Document[]
   workload   UserWorkload?   // PASSO 10: Workload tracking
   tasks      LeadTask[]
+  leadNotes  LeadNote[]
 }
 
 enum UserRole {
@@ -110,6 +111,20 @@ model Activity {
   details   String?   // JSON string with additional details
   
   createdAt DateTime  @default(now())
+}
+
+// Nota/histórico do lead (ex: "Dr. fez reunião com o cliente") — timeline no Kanban
+model LeadNote {
+  id          String   @id @default(cuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  content     String
+
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
 }
 
 model LeadTask {
@@ -327,6 +342,7 @@ model Lead {
   activities      Activity[]
   kanbanCards     KanbanCard[]
   tasks           LeadTask[]
+  leadNotes       LeadNote[]
   
   // Email Sequences
   sequenceProgress LeadSequenceProgress[]

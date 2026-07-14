@@ -13,6 +13,7 @@ import sequencesRoutes from './routes/sequences.js';
 import automationRoutes from './routes/automation.js';
 import reportsRoutes from './routes/reports.js';
 import tasksRoutes from './routes/tasks.js';
+import notesRoutes from './routes/notes.js';
 import typebotRoutes from './routes/typebotWebhook.js';
 import facebookRoutes from './routes/facebookWebhook.js';
 import { socketService } from './socket/service.js';
@@ -114,6 +115,7 @@ app.use('/api/sequences', sequencesRoutes);
 app.use('/api/automation', automationRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/tasks', tasksRoutes);
+app.use('/api/notes', notesRoutes);
 app.use('/api/typebot', typebotRoutes);
 app.use('/api/facebook', facebookRoutes);
 

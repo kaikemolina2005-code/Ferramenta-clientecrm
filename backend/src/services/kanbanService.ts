@@ -23,6 +23,9 @@ export class KanbanService {
               where: { completed: false },
               select: { id: true },
             },
+            leadNotes: {
+              select: { id: true },
+            },
           },
         },
         responsible: true,
@@ -45,6 +48,9 @@ export class KanbanService {
               where: { completed: false },
               select: { id: true },
             },
+            leadNotes: {
+              select: { id: true },
+            },
           },
         },
         responsible: true,
@@ -64,6 +70,9 @@ export class KanbanService {
             responsible: true,
             tasks: {
               where: { completed: false },
+              select: { id: true },
+            },
+            leadNotes: {
               select: { id: true },
             },
           },
@@ -95,6 +104,9 @@ export class KanbanService {
               where: { completed: false },
               select: { id: true },
             },
+            leadNotes: {
+              select: { id: true },
+            },
           },
         },
         responsible: true,
@@ -115,6 +127,9 @@ export class KanbanService {
             responsible: true,
             tasks: {
               where: { completed: false },
+              select: { id: true },
+            },
+            leadNotes: {
               select: { id: true },
             },
           },
@@ -145,6 +160,9 @@ export class KanbanService {
               where: { completed: false },
               select: { id: true },
             },
+            leadNotes: {
+              select: { id: true },
+            },
           },
         },
         responsible: true,
@@ -165,6 +183,9 @@ export class KanbanService {
             responsible: true,
             tasks: {
               where: { completed: false },
+              select: { id: true },
+            },
+            leadNotes: {
               select: { id: true },
             },
           },
@@ -200,6 +221,9 @@ export class KanbanService {
             responsible: true,
             tasks: {
               where: { completed: false },
+              select: { id: true },
+            },
+            leadNotes: {
               select: { id: true },
             },
           },

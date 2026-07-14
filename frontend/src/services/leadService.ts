@@ -1,5 +1,5 @@
 import api from './api';
-import { Lead, LeadTask } from '@/types';
+import { Lead, LeadTask, LeadNote } from '@/types';
 
 export const leadService = {
   async getAll(page = 1, limit = 20, filters?: any): Promise<{ leads: Lead[]; total: number }> {
@@ -111,5 +111,21 @@ export const taskService = {
 
   async delete(taskId: string): Promise<void> {
     await api.delete(`/tasks/${taskId}`);
+  },
+};
+
+export const noteService = {
+  async getByLead(leadId: string): Promise<LeadNote[]> {
+    const response = await api.get(`/notes/lead/${leadId}`);
+    return response.data.data || [];
+  },
+
+  async create(leadId: string, content: string): Promise<LeadNote> {
+    const response = await api.post(`/notes/lead/${leadId}`, { content });
+    return response.data.data;
+  },
+
+  async delete(noteId: string): Promise<void> {
+    await api.delete(`/notes/${noteId}`);
   },
 };
