@@ -1,7 +1,7 @@
 import { PrismaClient, KanbanSector } from '@prisma/client';
 import { KanbanCard } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from './prisma';
 
 export class KanbanService {
   /**

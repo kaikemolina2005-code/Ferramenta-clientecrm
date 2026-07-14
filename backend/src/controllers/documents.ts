@@ -5,7 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import oneDriveService from '../services/oneDriveService.js';
 
-const prisma = new PrismaClient();
+import { prisma } from '../services/prisma';
 
 // Configurar multer para salvar uploads temporariamente
 const uploadDir = path.join(process.cwd(), 'uploads');

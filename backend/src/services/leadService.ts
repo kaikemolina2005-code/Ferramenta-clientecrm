@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { Lead, LeadStatus, LeadCategory } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from './prisma';
 
 export class LeadService {
   /**
