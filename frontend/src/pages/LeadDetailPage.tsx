@@ -22,11 +22,12 @@ import {
   User as UserIcon,
   Briefcase,
   Clock,
+  Trash2,
 } from 'lucide-react';
 import Card from '@/components/horizon/Card';
-import { leadService, taskService } from '@/services/leadService';
+import { leadService, taskService, noteService } from '@/services/leadService';
 import { generateLeadWord, generateLeadPDF } from '@/utils/leadDocuments';
-import type { Lead, LeadTask } from '@/types';
+import type { Lead, LeadTask, LeadNote } from '@/types';
 
 const STATUS_META: Record<string, { label: string; colorScheme: string }> = {
   INITIAL: { label: 'Inicial', colorScheme: 'blue' },
@@ -79,28 +80,31 @@ export function LeadDetailPage() {
   const [activities, setActivities] = useState<any[]>([]);
   const [tasks, setTasks] = useState<LeadTask[]>([]);
   const [loading, setLoading] = useState(true);
-  const [notes, setNotes] = useState('');
-  const [savingNotes, setSavingNotes] = useState(false);
+  const [leadNotes, setLeadNotes] = useState<LeadNote[]>([]);
+  const [newNote, setNewNote] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
 
   const titleColor = useColorModeValue('navy.700', 'white');
   const labelColor = useColorModeValue('secondaryGray.600', 'secondaryGray.500');
   const valueColor = useColorModeValue('navy.700', 'whiteAlpha.900');
   const lineColor = useColorModeValue('secondaryGray.200', 'whiteAlpha.200');
+  const noteBg = useColorModeValue('gray.50', 'whiteAlpha.100');
 
   useEffect(() => {
     if (!id) return;
     (async () => {
       try {
         setLoading(true);
-        const [leadData, act, tk] = await Promise.all([
+        const [leadData, act, tk, nts] = await Promise.all([
           leadService.getById(id),
           leadService.getActivity(id).catch(() => []),
           taskService.getByLead(id).catch(() => []),
+          noteService.getByLead(id).catch(() => []),
         ]);
         setLead(leadData);
-        setNotes(leadData.notes || '');
         setActivities(act || []);
         setTasks(tk || []);
+        setLeadNotes(nts || []);
       } catch (error) {
         console.error('Erro ao carregar lead:', error);
       } finally {
@@ -109,16 +113,29 @@ export function LeadDetailPage() {
     })();
   }, [id]);
 
-  const handleSaveNotes = async () => {
-    if (!lead) return;
+  const handleAddNote = async () => {
+    if (!lead || !newNote.trim()) return;
     try {
-      setSavingNotes(true);
-      await leadService.update(lead.id, { notes } as any);
-      setLead({ ...lead, notes });
+      setSavingNote(true);
+      await noteService.create(lead.id, newNote.trim());
+      setNewNote('');
+      const nts = await noteService.getByLead(lead.id);
+      setLeadNotes(nts);
     } catch (error) {
-      console.error('Erro ao salvar anotações:', error);
+      console.error('Erro ao salvar anotação:', error);
+      alert('Erro ao salvar a anotação. Tente novamente.');
     } finally {
-      setSavingNotes(false);
+      setSavingNote(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!confirm('Remover esta anotação?')) return;
+    try {
+      await noteService.delete(noteId);
+      setLeadNotes((prev) => prev.filter((n) => n.id !== noteId));
+    } catch (error) {
+      console.error('Erro ao remover anotação:', error);
     }
   };
 
@@ -232,18 +249,40 @@ export function LeadDetailPage() {
           </Card>
 
           <Card>
-            <Text fontSize="lg" fontWeight="700" color={titleColor} mb="12px">Anotações</Text>
+            <Text fontSize="lg" fontWeight="700" color={titleColor} mb="4px">📝 Anotações e Reuniões</Text>
+            <Text fontSize="xs" color={labelColor} mb="12px">
+              Registre reuniões, ligações e combinados. Cada anotação fica salva com data e autor.
+            </Text>
             <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Escreva observações sobre este lead..."
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              placeholder="Ex: Reunião feita hoje com o cliente. Ficou de enviar os documentos até sexta..."
               borderRadius="12px"
-              rows={5}
+              rows={3}
               mb="10px"
             />
-            <Button size="sm" variant="brand" onClick={handleSaveNotes} isLoading={savingNotes}>
-              Salvar anotação
+            <Button size="sm" variant="brand" onClick={handleAddNote} isLoading={savingNote} isDisabled={!newNote.trim()} mb="16px">
+              + Adicionar anotação
             </Button>
+
+            {leadNotes.length === 0 ? (
+              <Text color={labelColor} fontSize="sm">Nenhuma anotação ainda.</Text>
+            ) : (
+              <Box>
+                {leadNotes.map((n) => (
+                  <Flex key={n.id} direction="column" bg={noteBg} borderLeft="3px solid" borderColor="brand.500" borderRadius="0 8px 8px 0" p="10px 12px" mb="10px">
+                    <Flex justify="space-between" align="center" gap="8px">
+                      <Text fontSize="xs" fontWeight="600" color={valueColor}>{n.createdBy?.name || 'Usuário'}</Text>
+                      <Flex align="center" gap="8px">
+                        <Text fontSize="xs" color={labelColor} whiteSpace="nowrap">{formatDate(n.createdAt)}</Text>
+                        <Icon as={Trash2} boxSize="14px" color={labelColor} cursor="pointer" onClick={() => handleDeleteNote(n.id)} />
+                      </Flex>
+                    </Flex>
+                    <Text fontSize="sm" color={valueColor} mt="6px" whiteSpace="pre-wrap">{n.content}</Text>
+                  </Flex>
+                ))}
+              </Box>
+            )}
           </Card>
         </Box>
 

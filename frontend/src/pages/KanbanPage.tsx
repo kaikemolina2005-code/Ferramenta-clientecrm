@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Modal } from '@/components/Modals';
 import { designSystem } from '@/theme/designSystem';
-import { kanbanService, leadService, taskService, noteService } from '@/services/leadService';
-import { KanbanCard as KanbanCardType, Lead, LeadTask, LeadNote } from '@/types';
+import { kanbanService, leadService, taskService } from '@/services/leadService';
+import { KanbanCard as KanbanCardType, Lead, LeadTask } from '@/types';
 
 type SectorInfo = { key: string; name: string; color: string; icon: string };
 
@@ -101,6 +102,7 @@ function getStageKey(card: KanbanCardType, sector: string): string {
 }
 
 export function KanbanPage() {
+  const navigate = useNavigate();
   const [sectors, setSectors] = useState<SectorInfo[]>(loadSectors());
   const [activeSector, setActiveSector] = useState<string>(loadSectors()[0].key);
   const [cards, setCards] = useState<Record<string, KanbanCardType[]>>({});
@@ -165,13 +167,6 @@ export function KanbanPage() {
   const [newTaskDueDate, setNewTaskDueDate] = useState('');
   const [newTaskFile, setNewTaskFile] = useState<File | null>(null);
   const [savingTask, setSavingTask] = useState(false);
-
-  // Notas/histórico do lead (timeline do card)
-  const [noteModalCard, setNoteModalCard] = useState<KanbanCardType | null>(null);
-  const [cardNotes, setCardNotes] = useState<LeadNote[]>([]);
-  const [notesLoading, setNotesLoading] = useState(false);
-  const [newNoteText, setNewNoteText] = useState('');
-  const [savingNote, setSavingNote] = useState(false);
 
   const getStageName = (sector: string, stageKey: string, defaultName: string): string => {
     return stageNameOverrides[sector]?.[stageKey] || defaultName;
@@ -483,57 +478,6 @@ export function KanbanPage() {
   const closeTasksModal = () => {
     setTaskModalCard(null);
     setLeadTasks([]);
-  };
-
-  // ---- Notas/histórico do lead ----
-  const openNotesModal = async (card: KanbanCardType) => {
-    setNoteModalCard(card);
-    setNewNoteText('');
-    try {
-      setNotesLoading(true);
-      const notes = await noteService.getByLead(card.leadId);
-      setCardNotes(notes);
-    } catch (error) {
-      console.error('Erro ao carregar notas:', error);
-    } finally {
-      setNotesLoading(false);
-    }
-  };
-
-  const closeNotesModal = () => {
-    setNoteModalCard(null);
-    setCardNotes([]);
-    setNewNoteText('');
-  };
-
-  const handleCreateNote = async () => {
-    if (!noteModalCard || !newNoteText.trim() || savingNote) return;
-    try {
-      setSavingNote(true);
-      await noteService.create(noteModalCard.leadId, newNoteText.trim());
-      setNewNoteText('');
-      const notes = await noteService.getByLead(noteModalCard.leadId);
-      setCardNotes(notes);
-      await loadKanbanCards();
-    } catch (error) {
-      console.error('Erro ao criar nota:', error);
-      alert('Erro ao salvar a nota. Tente novamente.');
-    } finally {
-      setSavingNote(false);
-    }
-  };
-
-  const handleDeleteNote = async (note: LeadNote) => {
-    if (!noteModalCard) return;
-    if (!confirm('Remover esta nota?')) return;
-    try {
-      await noteService.delete(note.id);
-      const notes = await noteService.getByLead(noteModalCard.leadId);
-      setCardNotes(notes);
-      await loadKanbanCards();
-    } catch (error) {
-      console.error('Erro ao remover nota:', error);
-    }
   };
 
   const handleCreateTask = async () => {
@@ -1137,10 +1081,10 @@ export function KanbanPage() {
                             )}
                           </button>
                           <button
-                            title="Histórico e notas do lead"
+                            title="Abrir histórico e anotações do cliente"
                             onClick={(e) => {
                               e.stopPropagation();
-                              openNotesModal(card);
+                              navigate(`/leads/${card.leadId}`);
                             }}
                             style={{
                               display: 'flex',
@@ -1160,7 +1104,7 @@ export function KanbanPage() {
                               cursor: 'pointer'
                             }}
                           >
-                            <span>📝 Notas</span>
+                            <span>📋 Histórico</span>
                             {(card.lead?.leadNotes?.length || 0) > 0 && (
                               <span style={{
                                 backgroundColor: designSystem.colors.primary.light,
@@ -1516,105 +1460,6 @@ export function KanbanPage() {
             </div>
           </>
         )}
-      </Modal>
-
-      {/* Modal: notas/histórico do lead (timeline) */}
-      <Modal
-        isOpen={!!noteModalCard}
-        onClose={closeNotesModal}
-        title={`📝 Notas - ${noteModalCard?.lead?.name || ''}`}
-        size="medium"
-      >
-        <div>
-          {/* Nova nota */}
-          <textarea
-            value={newNoteText}
-            onChange={(e) => setNewNoteText(e.target.value)}
-            placeholder="Ex: Fiz reunião com o cliente hoje, ficou de enviar os documentos..."
-            rows={3}
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              border: `1px solid ${designSystem.colors.neutral.gray300}`,
-              borderRadius: '8px',
-              fontSize: '14px',
-              resize: 'vertical',
-              boxSizing: 'border-box',
-              fontFamily: 'inherit',
-            }}
-          />
-          <button
-            onClick={handleCreateNote}
-            disabled={!newNoteText.trim() || savingNote}
-            style={{
-              width: '100%',
-              marginTop: '8px',
-              marginBottom: '16px',
-              padding: '10px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: designSystem.colors.primary.dark,
-              color: designSystem.colors.neutral.white,
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: !newNoteText.trim() || savingNote ? 'not-allowed' : 'pointer',
-              opacity: !newNoteText.trim() || savingNote ? 0.6 : 1,
-            }}
-          >
-            {savingNote ? 'Salvando...' : '+ Adicionar nota'}
-          </button>
-
-          {/* Timeline */}
-          {notesLoading ? (
-            <p style={{ textAlign: 'center', color: designSystem.colors.neutral.gray500 }}>
-              Carregando notas...
-            </p>
-          ) : cardNotes.length === 0 ? (
-            <p style={{ textAlign: 'center', color: designSystem.colors.neutral.gray500, padding: '12px 0' }}>
-              Nenhuma nota ainda. Registre reuniões, ligações e combinados com o cliente.
-            </p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '320px', overflowY: 'auto' }}>
-              {cardNotes.map((note) => (
-                <div
-                  key={note.id}
-                  style={{
-                    borderLeft: `3px solid ${designSystem.colors.accent.gold}`,
-                    backgroundColor: designSystem.colors.neutral.light,
-                    borderRadius: '0 8px 8px 0',
-                    padding: '10px 12px',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: designSystem.colors.primary.dark }}>
-                      {note.createdBy?.name || 'Usuário'}
-                    </span>
-                    <span style={{ fontSize: '11px', color: designSystem.colors.neutral.gray500, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {new Date(note.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      <button
-                        title="Remover nota"
-                        onClick={() => handleDeleteNote(note)}
-                        style={{
-                          border: 'none',
-                          background: 'none',
-                          color: designSystem.colors.neutral.gray400,
-                          cursor: 'pointer',
-                          fontSize: '13px',
-                          padding: 0,
-                        }}
-                      >
-                        ✕
-                      </button>
-                    </span>
-                  </div>
-                  <p style={{ fontSize: '13px', color: designSystem.colors.neutral.gray600, margin: '6px 0 0', whiteSpace: 'pre-wrap' }}>
-                    {note.content}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </Modal>
     </div>
   );
