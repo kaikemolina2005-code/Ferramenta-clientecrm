@@ -16,14 +16,12 @@ import {
 import { Menu as MenuIcon, Bell, Moon, Sun } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import SearchBar from './SearchBar';
 
 const PAGE_NAMES: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/leads': 'Leads',
   '/kanban': 'CRM',
   '/tarefas': 'Tarefas',
-  '/automation': 'Automações',
   '/reports': 'Relatórios',
   '/documentos': 'Documentos',
   '/whatsapp': 'WhatsApp',
@@ -85,8 +83,6 @@ export function Navbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
           boxShadow={shadow}
           gap="4px"
         >
-          <SearchBar display={{ base: 'none', md: 'flex' }} me="6px" />
-
           <IconButton
             aria-label="Notificações"
             icon={<Icon as={Bell} boxSize="18px" />}

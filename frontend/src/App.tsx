@@ -13,7 +13,6 @@ const DocumentsPage = lazy(() => import('@/pages/DocumentsPage').then((m) => ({ 
 const KanbanPage = lazy(() => import('@/pages/KanbanPage').then((m) => ({ default: m.KanbanPage })))
 const WhatsAppPage = lazy(() => import('@/pages/WhatsAppPage').then((m) => ({ default: m.WhatsAppPage })))
 const TasksPage = lazy(() => import('@/pages/TasksPage').then((m) => ({ default: m.TasksPage })))
-const AutomationDashboard = lazy(() => import('@/pages/AutomationDashboard'))
 const ReportsPage = lazy(() => import('@/pages/ReportsPage'))
 const ProfilePage = lazy(() => import('@/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
 
@@ -89,14 +88,6 @@ function App() {
               element={
                 <Layout>
                   <WhatsAppPage />
-                </Layout>
-              }
-            />
-            <Route
-              path="/automation"
-              element={
-                <Layout>
-                  <AutomationDashboard />
                 </Layout>
               }
             />
