@@ -238,9 +238,9 @@ export async function generateLeadWord(lead: Lead): Promise<void> {
         .join('');
 
       const box = doc.contactBox
-        ? `<table style="width:100%;border:1pt solid #999;border-collapse:collapse;margin:8pt 0;font-family:'Times New Roman',Times,serif;font-size:11.5pt;">
+        ? `<table style="width:100%;border:1pt solid #999;border-collapse:collapse;margin:8pt 0;font-family:'Palatino Linotype','Book Antiqua',Palatino,serif;font-size:10pt;">
              <tr><td style="padding:6pt 10pt;">
-               ${doc.contactBox.map((p) => `<p align="center" style="text-align:center;margin:0 0 4pt 0;font-family:'Times New Roman',Times,serif;font-size:11.5pt;">${segmentsToHtml(p)}</p>`).join('')}
+               ${doc.contactBox.map((p) => `<p align="center" style="text-align:center;margin:0 0 4pt 0;font-family:'Palatino Linotype','Book Antiqua',Palatino,serif;font-size:10pt;">${segmentsToHtml(p)}</p>`).join('')}
              </td></tr>
            </table>`
         : '';
@@ -276,8 +276,8 @@ export async function generateLeadWord(lead: Lead): Promise<void> {
           mso-page-orientation: portrait;
         }
         body {
-          font-family: 'Times New Roman', Times, serif;
-          font-size: 11.5pt;
+          font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+          font-size: 10pt;
           line-height: 1.2;
           color: #1a1a1a;
         }
