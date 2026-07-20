@@ -3,7 +3,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { Card, Button } from '@/components/TopBar';
+import { Card } from '@/components/TopBar';
 import { designSystem } from '@/theme/designSystem';
 import api from '../services/api';
 
@@ -232,10 +232,6 @@ export default function ReportsPage() {
                   fontSize: '13px'
                 }}
               />
-            </div>
-            <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
-              <Button variant="secondary">📥 PDF</Button>
-              <Button variant="primary">📊 CSV</Button>
             </div>
           </div>
         </Card>
