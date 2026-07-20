@@ -210,18 +210,14 @@ async function loadLetterheadDataUri(): Promise<string | null> {
 
 function letterheadHtml(logoDataUri: string | null): string {
   if (logoDataUri) {
-    return `
-    <div style="text-align:center;margin-bottom:14pt;">
-      <img src="${logoDataUri}" style="height:48pt;" />
-      <div style="border-bottom:1.5pt solid #a9b8c9;width:100%;margin-top:8pt;"></div>
-    </div>`;
+    // Logo pequena no canto superior direito, igual ao papel timbrado real.
+    return `<div style="text-align:right;margin-bottom:2pt;"><img src="${logoDataUri}" style="height:26pt;" /></div>`;
   }
   // Sem o arquivo do timbre (ex: falha ao carregar): cabeçalho em texto como alternativa.
   return `
-    <div style="text-align:center;margin-bottom:14pt;">
-      <div style="font-size:15pt;font-weight:bold;color:#003f7f;letter-spacing:1pt;">DIEGO PATRÍCIO</div>
-      <div style="font-size:9pt;font-weight:600;color:#a9822f;letter-spacing:3pt;">ADVOGADO</div>
-      <div style="border-bottom:1.5pt solid #a9822f;width:100%;margin-top:6pt;"></div>
+    <div style="text-align:right;margin-bottom:4pt;">
+      <div style="font-size:11pt;font-weight:bold;color:#003f7f;">DIEGO PATRÍCIO</div>
+      <div style="font-size:7pt;font-weight:600;color:#a9822f;letter-spacing:2pt;">ADVOGADO</div>
     </div>`;
 }
 
@@ -233,26 +229,26 @@ export async function generateLeadWord(lead: Lead): Promise<void> {
   const sections = docs
     .map((doc, i) => {
       const paras = doc.paragraphs
-        .map((p) => `<p align="justify" style="text-align:justify;margin:0 0 12pt 0;">${segmentsToHtml(p)}</p>`)
+        .map((p) => `<p align="justify" style="text-align:justify;margin:0 0 8pt 0;">${segmentsToHtml(p)}</p>`)
         .join('');
 
       const box = doc.contactBox
-        ? `<table style="width:100%;border:1pt solid #999;border-collapse:collapse;margin:14pt 0;">
-             <tr><td style="padding:10pt 14pt;">
-               ${doc.contactBox.map((p) => `<p align="center" style="text-align:center;margin:0 0 8pt 0;">${segmentsToHtml(p)}</p>`).join('')}
+        ? `<table style="width:100%;border:1pt solid #999;border-collapse:collapse;margin:8pt 0;">
+             <tr><td style="padding:6pt 10pt;">
+               ${doc.contactBox.map((p) => `<p align="center" style="text-align:center;margin:0 0 4pt 0;">${segmentsToHtml(p)}</p>`).join('')}
              </td></tr>
            </table>`
         : '';
 
       const afterBox = doc.afterBox
-        ? doc.afterBox.map((p) => `<p align="justify" style="text-align:justify;margin:0 0 12pt 0;">${segmentsToHtml(p)}</p>`).join('')
+        ? doc.afterBox.map((p) => `<p align="justify" style="text-align:justify;margin:0 0 8pt 0;">${segmentsToHtml(p)}</p>`).join('')
         : '';
 
       const pageBreak = i > 0 ? 'style="page-break-before:always;padding-top:1pt;"' : '';
 
       return `<div ${pageBreak}>
         ${letterheadHtml(logoDataUri)}
-        <h2 style="text-align:center;font-size:13pt;font-weight:bold;text-decoration:underline;margin:0 0 16pt 0;">${escapeHtml(doc.title)}</h2>
+        <h2 style="text-align:center;font-size:13pt;font-weight:bold;text-decoration:underline;margin:0 0 10pt 0;">${escapeHtml(doc.title)}</h2>
         ${paras}${box}${afterBox}
       </div>`;
     })
@@ -273,13 +269,13 @@ export async function generateLeadWord(lead: Lead): Promise<void> {
       <style>
         @page {
           size: 21cm 29.7cm;
-          margin: 2.8cm 2.3cm 2.8cm 2.3cm;
+          margin: 1.8cm 2cm 1.8cm 2cm;
           mso-page-orientation: portrait;
         }
         body {
           font-family: 'Times New Roman', Times, serif;
-          font-size: 12pt;
-          line-height: 1.4;
+          font-size: 11.5pt;
+          line-height: 1.2;
           color: #1a1a1a;
         }
       </style>
