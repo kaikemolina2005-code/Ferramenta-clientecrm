@@ -226,8 +226,13 @@ export async function generateLeadWord(lead: Lead): Promise<void> {
   const docs = buildDocuments(lead);
   const logoDataUri = await loadLetterheadDataUri();
 
+  // Quebra de página clássica do "Word HTML doc": um <br> com mso page-break,
+  // colocado ENTRE as seções (não como estilo da própria div), evita o espaço em
+  // branco extra que o Word insere quando a quebra é aplicada direto na div.
+  const PAGE_BREAK = '<br clear="all" style="page-break-before:always;mso-special-character:line-break;" />';
+
   const sections = docs
-    .map((doc, i) => {
+    .map((doc) => {
       const paras = doc.paragraphs
         .map((p) => `<p align="justify" style="text-align:justify;margin:0 0 8pt 0;">${segmentsToHtml(p)}</p>`)
         .join('');
@@ -244,15 +249,13 @@ export async function generateLeadWord(lead: Lead): Promise<void> {
         ? doc.afterBox.map((p) => `<p align="justify" style="text-align:justify;margin:0 0 8pt 0;">${segmentsToHtml(p)}</p>`).join('')
         : '';
 
-      const pageBreak = i > 0 ? 'style="page-break-before:always;padding-top:1pt;"' : '';
-
-      return `<div ${pageBreak}>
+      return `<div style="margin:0;padding:0;">
         ${letterheadHtml(logoDataUri)}
         <h2 style="text-align:center;font-size:13pt;font-weight:bold;margin:0 0 10pt 0;"><u>${escapeHtml(doc.title)}</u></h2>
         ${paras}${box}${afterBox}
       </div>`;
     })
-    .join('');
+    .join(PAGE_BREAK);
 
   const html = `<!DOCTYPE html>
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
