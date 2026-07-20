@@ -190,7 +190,33 @@ function segmentsToHtml(segments: Paragraph): string {
     .join('');
 }
 
-function letterheadHtml(): string {
+/** Busca o timbre real (frontend/public/logo-timbrado.png) e converte para data URI,
+ * para o logo ficar embutido no arquivo .doc (não depende de internet ao abrir). */
+async function loadLetterheadDataUri(): Promise<string | null> {
+  try {
+    const response = await fetch('/logo-timbrado.png');
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+function letterheadHtml(logoDataUri: string | null): string {
+  if (logoDataUri) {
+    return `
+    <div style="text-align:center;margin-bottom:14pt;">
+      <img src="${logoDataUri}" style="height:48pt;" />
+      <div style="border-bottom:1.5pt solid #a9b8c9;width:100%;margin-top:8pt;"></div>
+    </div>`;
+  }
+  // Sem o arquivo do timbre (ex: falha ao carregar): cabeçalho em texto como alternativa.
   return `
     <div style="text-align:center;margin-bottom:14pt;">
       <div style="font-size:15pt;font-weight:bold;color:#003f7f;letter-spacing:1pt;">DIEGO PATRÍCIO</div>
@@ -200,8 +226,9 @@ function letterheadHtml(): string {
 }
 
 /** Gera e baixa o Word (.doc) com os 3 documentos, no layout de papel timbrado do escritório. */
-export function generateLeadWord(lead: Lead): void {
+export async function generateLeadWord(lead: Lead): Promise<void> {
   const docs = buildDocuments(lead);
+  const logoDataUri = await loadLetterheadDataUri();
 
   const sections = docs
     .map((doc, i) => {
@@ -224,7 +251,7 @@ export function generateLeadWord(lead: Lead): void {
       const pageBreak = i > 0 ? 'style="page-break-before:always;padding-top:1pt;"' : '';
 
       return `<div ${pageBreak}>
-        ${letterheadHtml()}
+        ${letterheadHtml(logoDataUri)}
         <h2 style="text-align:center;font-size:13pt;font-weight:bold;text-decoration:underline;margin:0 0 16pt 0;">${escapeHtml(doc.title)}</h2>
         ${paras}${box}${afterBox}
       </div>`;
