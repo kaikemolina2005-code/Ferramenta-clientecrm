@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { designSystem } from '@/theme/designSystem';
 import { leadService } from '@/services/leadService';
-import { generateLeadWord, generateLeadPDF } from '@/utils/leadDocuments';
+import { generateLeadWord } from '@/utils/leadDocuments';
 import type { Lead } from '@/types';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -117,14 +117,9 @@ export function DocumentsPage() {
                   {lead.phone ? ` • ${lead.phone}` : ''}
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button style={btnStyle(designSystem.colors.primary.dark)} onClick={() => generateLeadWord(lead)}>
-                  📝 Gerar Word
-                </button>
-                <button style={btnStyle(designSystem.colors.status.error)} onClick={() => generateLeadPDF(lead)}>
-                  📄 Gerar PDF
-                </button>
-              </div>
+              <button style={btnStyle(designSystem.colors.primary.dark)} onClick={() => generateLeadWord(lead)}>
+                📝 Gerar Word
+              </button>
             </div>
           ))}
         </div>

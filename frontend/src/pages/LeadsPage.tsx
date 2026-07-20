@@ -62,7 +62,7 @@ import Card from '@/components/horizon/Card';
 import { leadService } from '@/services/leadService';
 import type { Lead } from '@/types';
 import { DEMO_FALLBACK, demoLeads } from '@/utils/demoData';
-import { generateLeadWord, generateLeadPDF } from '@/utils/leadDocuments';
+import { generateLeadWord } from '@/utils/leadDocuments';
 import { exportLeadsCsv, parseLeadsCsv, downloadLeadsCsvTemplate } from '@/utils/leadCsv';
 
 const STATUS_META: Record<string, { label: string; colorScheme: string }> = {
@@ -325,7 +325,6 @@ export function LeadsPage() {
               <MenuDivider />
               <MenuGroup title="Gerar documentos">
                 <MenuItem onClick={() => generateLeadWord(row.original)}>📄 Baixar em Word</MenuItem>
-                <MenuItem onClick={() => generateLeadPDF(row.original)}>📄 Baixar em PDF</MenuItem>
               </MenuGroup>
               <MenuDivider />
               <MenuGroup title="Mudar status">

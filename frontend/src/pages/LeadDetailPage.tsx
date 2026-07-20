@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import Card from '@/components/horizon/Card';
 import { leadService, taskService, noteService } from '@/services/leadService';
-import { generateLeadWord, generateLeadPDF } from '@/utils/leadDocuments';
+import { generateLeadWord } from '@/utils/leadDocuments';
 import type { Lead, LeadTask, LeadNote } from '@/types';
 
 const STATUS_META: Record<string, { label: string; colorScheme: string }> = {
@@ -220,14 +220,9 @@ export function LeadDetailPage() {
               <Badge borderRadius="8px" px="10px" py="3px">{CATEGORY_LABELS[lead.category] || lead.category}</Badge>
             </Flex>
           </Box>
-          <Flex gap="8px" wrap="wrap">
-            <Button size="sm" variant="outline" leftIcon={<Icon as={FileText} boxSize="16px" />} onClick={() => generateLeadWord(lead)}>
-              Documentos (Word)
-            </Button>
-            <Button size="sm" variant="outline" leftIcon={<Icon as={FileText} boxSize="16px" />} onClick={() => generateLeadPDF(lead)}>
-              Documentos (PDF)
-            </Button>
-          </Flex>
+          <Button size="sm" variant="outline" leftIcon={<Icon as={FileText} boxSize="16px" />} onClick={() => generateLeadWord(lead)}>
+            Documentos (Word)
+          </Button>
         </Flex>
       </Card>
 
