@@ -233,9 +233,9 @@ export async function generateLeadWord(lead: Lead): Promise<void> {
         .join('');
 
       const box = doc.contactBox
-        ? `<table style="width:100%;border:1pt solid #999;border-collapse:collapse;margin:8pt 0;">
+        ? `<table style="width:100%;border:1pt solid #999;border-collapse:collapse;margin:8pt 0;font-family:'Times New Roman',Times,serif;font-size:11.5pt;">
              <tr><td style="padding:6pt 10pt;">
-               ${doc.contactBox.map((p) => `<p align="center" style="text-align:center;margin:0 0 4pt 0;">${segmentsToHtml(p)}</p>`).join('')}
+               ${doc.contactBox.map((p) => `<p align="center" style="text-align:center;margin:0 0 4pt 0;font-family:'Times New Roman',Times,serif;font-size:11.5pt;">${segmentsToHtml(p)}</p>`).join('')}
              </td></tr>
            </table>`
         : '';
@@ -248,7 +248,7 @@ export async function generateLeadWord(lead: Lead): Promise<void> {
 
       return `<div ${pageBreak}>
         ${letterheadHtml(logoDataUri)}
-        <h2 style="text-align:center;font-size:13pt;font-weight:bold;text-decoration:underline;margin:0 0 10pt 0;">${escapeHtml(doc.title)}</h2>
+        <h2 style="text-align:center;font-size:13pt;font-weight:bold;margin:0 0 10pt 0;"><u>${escapeHtml(doc.title)}</u></h2>
         ${paras}${box}${afterBox}
       </div>`;
     })
